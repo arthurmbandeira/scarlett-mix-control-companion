@@ -200,10 +200,12 @@ function measureAllInputLevels(response) {
   );
 }
 
-function streamInputMeter(response, channels) {
-  const probeArgumentsForStream = channels.length === 1
-    ? ["--stream-input-meter", String(channels[0])]
-    : ["--stream-input-meters", channels.join(",")];
+function streamMeters(response, channels, direction = "input") {
+  const probeArgumentsForStream = direction === "output"
+    ? ["--stream-scarlett-output-meters", channels.join(",")]
+    : channels.length === 1
+      ? ["--stream-input-meter", String(channels[0])]
+      : ["--stream-input-meters", channels.join(",")];
   const child = spawn("swift", probeArguments(...probeArgumentsForStream), {
     cwd: workspaceRoot,
     stdio: ["ignore", "pipe", "pipe"]
@@ -244,14 +246,14 @@ function streamInputMeter(response, channels) {
   });
   child.on("error", (error) => {
     if (disconnected || response.writableEnded) return;
-    response.write(`event: error\ndata: ${JSON.stringify({ error: `Could not start the Swift meter: ${error.message}` })}\n\n`);
+    response.write(`event: probe-error\ndata: ${JSON.stringify({ error: `Could not start the Swift meter: ${error.message}` })}\n\n`);
     response.end();
   });
   child.on("close", (exitCode) => {
     if (disconnected || response.writableEnded) return;
     if (outputBuffer.trim() && exitCode === 0) response.write(`data: ${outputBuffer}\n\n`);
     if (exitCode !== 0) {
-      response.write(`event: error\ndata: ${JSON.stringify({ error: "The live input meter stopped.", detail: stderr.trim() })}\n\n`);
+      response.write(`event: probe-error\ndata: ${JSON.stringify({ error: `The live ${direction} meter stopped.`, detail: stderr.trim() })}\n\n`);
     }
     response.end();
   });
@@ -277,7 +279,7 @@ const server = createServer(async (request, response) => {
     if (channel !== 1) {
       return sendJSON(response, 400, { error: "The live meter currently supports Input 1 only." });
     }
-    return streamInputMeter(response, [channel]);
+    return streamMeters(response, [channel]);
   }
 
   if (pathname === "/api/live-input-meters") {
@@ -291,7 +293,15 @@ const server = createServer(async (request, response) => {
         || new Set(channels).size !== channels.length) {
       return sendJSON(response, 400, { error: "Choose unique CoreAudio input channels from 1 to 18." });
     }
-    return streamInputMeter(response, channels);
+    return streamMeters(response, channels);
+  }
+
+  if (pathname === "/api/live-output-meter") {
+    if (request.method !== "GET") {
+      response.writeHead(405, { Allow: "GET" });
+      return response.end("The Scarlett output meter uses GET with a server-sent event stream.\n");
+    }
+    return streamMeters(response, [1, 2], "output");
   }
 
   if (pathname === "/api/input-scan") {

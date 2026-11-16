@@ -619,7 +619,7 @@
       <div>
         <p class="eyebrow">Scarlett 18i8 | 1st generation</p>
         <h1>MixControl</h1>
-        <p class="page-note">Built for the Scarlett 18i8 1st gen. Inputs 1-18 have live meters; faders and routing remain simulated.</p>
+        <p class="page-note">Built for the Scarlett 18i8 1st gen. Inputs 1-18 and Main Output 1/2 can be metered live; faders and routing remain simulated.</p>
       </div>
       <span class="offline-tag">Inputs 1-18 live meters | routing simulated</span>
     </div>
@@ -673,12 +673,13 @@
     <section class="view active" id="view-mixer" role="tabpanel" aria-labelledby="tab-mixer">
       <div class="section-head">
         <h2>Monitor mix</h2>
-        <span class="section-detail">All 18 CoreAudio input meters are live. Faders, pan, M/S, and Playback/Monitor strips remain simulated.</span>
+        <span class="section-detail">Inputs 1-18 and Scarlett Main Output 1/2 support live meters. Playback returns remain simulated.</span>
       </div>
       <div class="mixer-toolbar">
         <div>
           <button class="signal-button" id="signal-toggle" type="button" aria-pressed="false">Start meter demo</button>
           <button class="signal-button" id="live-input-toggle" type="button" aria-pressed="false">Start input meters</button>
+          <button class="signal-button" id="live-output-toggle" type="button" aria-pressed="false">Start output meter</button>
           <span class="signal-status" id="signal-status">Meters idle</span>
         </div>
         <span class="section-detail">Drag a fader | pan | toggle M / S</span>
@@ -946,7 +947,7 @@
       { name: "Analogue 3/4", kind: "Hardware input", inputChannels: [3, 4], stereo: true, level: -14, pan: 0 },
       { name: "Playback 1/2", kind: "DAW return", stereo: true, level: -4, pan: 0 },
       { name: "Playback 3/4", kind: "DAW return", stereo: true, level: -18, pan: 0 },
-      { name: "Monitor", kind: "Main output", stereo: true, level: -6, pan: 0 },
+      { name: "Monitor", kind: "Main output", outputChannels: [1, 2], stereo: true, level: -6, pan: 0 },
       ...Array.from({ length: 14 }, (_, index) => ({
         name: `Input ${index + 5}`,
         kind: "CoreAudio input",
@@ -962,8 +963,9 @@
       ["S/PDIF Output 1", "Digital"], ["S/PDIF Output 2", "Digital"]
     ];
     const routeSources = ["Mix 1", "Mix 2", "Playback 1", "Playback 2", "Playback 3", "Playback 4", "Analogue 1", "Analogue 2", "Mute"];
-    const pageState = { signal: false, timer: null, liveInput: null };
+    const pageState = { signal: false, timer: null, liveInput: null, liveOutput: null, outputPeak: null };
     const liveInputChannels = channels.flatMap((channel) => channel.inputChannels || []);
+    const liveOutputChannels = channels.flatMap((channel) => channel.outputChannels || []);
 
     const channelGrid = document.querySelector("#channel-grid");
     const toast = document.querySelector("#toast");
@@ -979,10 +981,12 @@
     function channelMarkup(channel, index) {
       const meterCount = channel.stereo ? 2 : 1;
       const liveInput = Boolean(channel.inputChannels);
+      const liveOutput = Boolean(channel.outputChannels);
       const panValue = Number(channel.pan);
-      return `<article class="channel" data-channel="${index}" data-live-input="${liveInput}" data-active="false">
-        <div class="channel-name">${channel.name}<div class="channel-kind">${liveInput ? `${channel.kind} | live capable` : `${channel.kind} | simulated`}</div></div>
-        <div class="meter-row" aria-label="${liveInput ? "Live-capable" : "Simulated"} ${channel.stereo ? "stereo" : "mono"} level meter">
+      const liveKind = liveInput || liveOutput ? `${channel.kind} | live capable` : `${channel.kind} | simulated`;
+      return `<article class="channel" data-channel="${index}" data-live-input="${liveInput}" data-live-output="${liveOutput}" data-active="false">
+        <div class="channel-name">${channel.name}<div class="channel-kind">${liveKind}</div></div>
+        <div class="meter-row" aria-label="${liveInput || liveOutput ? "Live-capable" : "Simulated"} ${channel.stereo ? "stereo" : "mono"} level meter">
           ${Array.from({ length: meterCount }, () => `<div class="meter"><div class="meter-level"></div><div class="meter-scale"></div></div>`).join("")}
         </div>
         <div class="meter-value" data-meter-value>-inf dBFS</div>
@@ -1023,7 +1027,8 @@
 
     function updateMeters() {
       document.querySelectorAll(".channel").forEach((channel, index) => {
-        if (channel.dataset.liveInput === "true" && pageState.liveInput) return;
+        if ((channel.dataset.liveInput === "true" && pageState.liveInput)
+          || (channel.dataset.liveOutput === "true" && pageState.liveOutput)) return;
         const muted = channel.querySelector('[data-kind="mute"]').getAttribute("aria-pressed") === "true";
         const fader = Number(channel.querySelector(".fader").value);
         const levels = channel.querySelectorAll(".meter-level");
@@ -1044,6 +1049,7 @@
 
     document.querySelector("#signal-toggle").addEventListener("click", (event) => {
       if (pageState.liveInput) stopLiveInputMeter();
+      if (pageState.liveOutput) stopLiveOutputMeter();
       pageState.signal = !pageState.signal;
       event.currentTarget.setAttribute("aria-pressed", String(pageState.signal));
       event.currentTarget.textContent = pageState.signal ? "Stop meter demo" : "Start meter demo";
@@ -1059,6 +1065,7 @@
     });
 
     const liveInputButton = document.querySelector("#live-input-toggle");
+    const liveOutputButton = document.querySelector("#live-output-toggle");
     const demoButton = document.querySelector("#signal-toggle");
     const liveInputStrips = channels.flatMap((channel, index) => {
       if (!channel.inputChannels) return [];
@@ -1105,15 +1112,18 @@
         );
       }
       const peak = Math.max(...activeFrames.map((frame) => frame.peakDbFS));
-      document.querySelector("#signal-status").textContent = `Inputs 1-18 live | peak ${peak.toFixed(1)} dBFS`;
+      const outputStatus = pageState.outputPeak === null
+        ? ""
+        : ` | Outputs 1/2 peak ${pageState.outputPeak.toFixed(1)} dBFS`;
+      document.querySelector("#signal-status").textContent = `Inputs 1-18 live | peak ${peak.toFixed(1)} dBFS${outputStatus}`;
     }
 
-    function stopLiveInputMeter() {
+    function stopLiveInputMeter(statusMessage = null) {
       if (pageState.liveInput) pageState.liveInput.close();
       pageState.liveInput = null;
       liveInputButton.setAttribute("aria-pressed", "false");
       liveInputButton.textContent = "Start input meters";
-      demoButton.disabled = false;
+      demoButton.disabled = Boolean(pageState.liveOutput);
       for (const strip of liveInputStrips) {
         const inputNames = strip.channels.map((channel) => `Input ${channel}`);
         strip.kind.textContent = `${inputNames.join("/")} | live capable`;
@@ -1122,7 +1132,8 @@
         strip.levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
         strip.row.setAttribute("aria-label", `Live-capable input meters: ${inputNames.join(", ")}`);
       }
-      document.querySelector("#signal-status").textContent = pageState.signal ? "Synthetic signal active" : "Meters idle";
+      document.querySelector("#signal-status").textContent = statusMessage
+        || (pageState.liveOutput ? "Scarlett Output 1/2 live" : pageState.signal ? "Synthetic signal active" : "Meters idle");
     }
 
     liveInputButton.addEventListener("click", () => {
@@ -1158,9 +1169,97 @@
           document.querySelector("#signal-status").textContent = "Input meter stream reconnecting or unavailable";
         }
       };
+      source.addEventListener("probe-error", (event) => {
+        const payload = JSON.parse(event.data);
+        source.close();
+        if (pageState.liveInput === source) stopLiveInputMeter(payload.detail || payload.error);
+      });
+    });
+
+    const liveOutputStripIndex = channels.findIndex((channel) => channel.outputChannels);
+    const liveOutputStrip = document.querySelector(`.channel[data-channel="${liveOutputStripIndex}"]`);
+    const liveOutputLevels = [...liveOutputStrip.querySelectorAll(".meter-level")];
+    const liveOutputValue = liveOutputStrip.querySelector("[data-meter-value]");
+    const liveOutputKind = liveOutputStrip.querySelector(".channel-kind");
+    const liveOutputRow = liveOutputStrip.querySelector(".meter-row");
+
+    function stopLiveOutputMeter(statusMessage = null) {
+      if (pageState.liveOutput) pageState.liveOutput.close();
+      pageState.liveOutput = null;
+      pageState.outputPeak = null;
+      liveOutputButton.setAttribute("aria-pressed", "false");
+      liveOutputButton.textContent = "Start output meter";
+      demoButton.disabled = Boolean(pageState.liveInput);
+      liveOutputKind.textContent = "Main output | live capable";
+      liveOutputValue.textContent = "-inf dBFS";
+      liveOutputValue.title = "Scarlett Main Output 1/2 meter is stopped";
+      liveOutputLevels.forEach((meter) => meter.style.setProperty("--level", "3%"));
+      liveOutputRow.setAttribute("aria-label", "Live-capable Scarlett Main Output 1/2 stereo meter");
+      document.querySelector("#signal-status").textContent = statusMessage
+        || (pageState.liveInput ? "Scarlett Inputs 1-18 live" : pageState.signal ? "Synthetic signal active" : "Meters idle");
+    }
+
+    liveOutputButton.addEventListener("click", () => {
+      if (pageState.liveOutput) {
+        stopLiveOutputMeter();
+        return;
+      }
+      if (pageState.signal) {
+        pageState.signal = false;
+        clearInterval(pageState.timer);
+        pageState.timer = null;
+        demoButton.setAttribute("aria-pressed", "false");
+        demoButton.textContent = "Start meter demo";
+        updateMeters();
+      }
+      liveOutputButton.setAttribute("aria-pressed", "true");
+      liveOutputButton.textContent = "Stop output meter";
+      demoButton.disabled = true;
+      liveOutputKind.textContent = "Connecting | Scarlett Out 1/2";
+      document.querySelector("#signal-status").textContent = "Connecting to Scarlett Main Output 1/2...";
+      const source = new EventSource("/api/live-output-meter");
+      pageState.liveOutput = source;
+      source.onopen = () => {
+        document.querySelector("#signal-status").textContent = "Scarlett Main Output 1/2 live | CoreAudio tap";
+      };
+      source.onmessage = (event) => {
+        const frames = JSON.parse(event.data).filter((frame) => frame.frames > 0);
+        if (frames.length === 0) return;
+        for (const frame of frames) {
+          const meterIndex = liveOutputChannels.indexOf(frame.channel);
+          if (meterIndex < 0) continue;
+          const level = Math.max(3, levelToHistoryPercent(frame.rmsDbFS));
+          liveOutputLevels[meterIndex].style.setProperty("--level", `${level}%`);
+        }
+        liveOutputKind.textContent = "CoreAudio | live Output 1/2";
+        liveOutputValue.textContent = `${frames.map((frame) => frame.rmsDbFS.toFixed(0)).join(" / ")} dBFS`;
+        liveOutputValue.title = frames
+          .map((frame) => `Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS | peak ${frame.peakDbFS.toFixed(1)} dBFS`)
+          .join("; ");
+        liveOutputRow.setAttribute(
+          "aria-label",
+          frames.map((frame) => `Live Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS; peak ${frame.peakDbFS.toFixed(1)} dBFS`).join(". ")
+        );
+        const peak = Math.max(...frames.map((frame) => frame.peakDbFS));
+        pageState.outputPeak = peak;
+        document.querySelector("#signal-status").textContent = pageState.liveInput
+          ? `Inputs 1-18 and Outputs 1/2 live | output peak ${peak.toFixed(1)} dBFS`
+          : `Scarlett Outputs 1/2 live | peak ${peak.toFixed(1)} dBFS`;
+      };
+      source.onerror = () => {
+        if (pageState.liveOutput === source) {
+          document.querySelector("#signal-status").textContent = "Output meter reconnecting or unavailable (requires macOS 14.2+)";
+        }
+      };
+      source.addEventListener("probe-error", (event) => {
+        const payload = JSON.parse(event.data);
+        source.close();
+        if (pageState.liveOutput === source) stopLiveOutputMeter(payload.detail || payload.error);
+      });
     });
 
     window.addEventListener("pagehide", stopLiveInputMeter);
+    window.addEventListener("pagehide", stopLiveOutputMeter);
 
     const routeList = document.querySelector("#routing-list");
     const routingArt = document.querySelector("#routing-art");
