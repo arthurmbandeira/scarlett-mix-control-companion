@@ -93,6 +93,15 @@ struct InputMeterSnapshot: Encodable {
     let peakDbFS: Double
 }
 
+struct InputMeterStreamFrame: Encodable {
+    let device: String
+    let channel: Int
+    let sampleRateHz: Double
+    let frames: UInt64
+    let rmsDbFS: Double
+    let peakDbFS: Double
+}
+
 func check(_ status: OSStatus, operation: String) throws {
     guard status == noErr else {
         throw ProbeError.coreAudio(status, operation)

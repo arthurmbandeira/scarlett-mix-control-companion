@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101416">
-  <title>Scarlett MixControl Playground</title>
+  <title>Scarlett 18i8 1st Gen | MixControl Companion</title>
   <style>
     :root {
       color-scheme: dark;
@@ -272,8 +272,9 @@
       box-shadow: inset 0 1px #ffffff12;
     }
     .channel[data-active="true"] { border-top-color: var(--red); }
-    .channel-name { min-height: 31px; font-size: 11px; font-weight: 800; line-height: 1.3; }
+    .channel-name { height: 44px; overflow: hidden; font-size: 11px; font-weight: 800; line-height: 1.3; }
     .channel-kind { margin-top: 3px; color: #aab2b0; font-size: 9px; text-transform: uppercase; letter-spacing: .6px; }
+    .channel-kind { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
     .meter-row { display: flex; justify-content: center; gap: 5px; height: 132px; margin: 12px 0 5px; }
     .meter {
       position: relative;
@@ -314,6 +315,7 @@
     .fader-value { color: #e8ece8; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; }
     .pan-row { margin-top: 12px; }
     .pan-labels { display: flex; justify-content: space-between; margin-bottom: 3px; color: #aeb7b4; font-size: 9px; }
+    .pan-value { min-width: 24px; color: var(--ink); font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; }
     .pan { width: 100%; height: 14px; margin: 0; accent-color: #d6d9d5; }
     .switch-row { display: flex; justify-content: center; gap: 7px; margin-top: 9px; }
     .switch {
@@ -509,7 +511,7 @@
       .route-row { grid-template-columns: minmax(92px, .65fr) minmax(145px, 1.35fr); gap: 8px; }
       .route-name { font-size: 10px; }
       .route-source { font-size: 10px; }
-      .offline-tag { align-self: start; }
+      .offline-tag { align-self: start; max-width: 100%; white-space: normal; }
     }
     @media (max-width: 380px) {
       .channel-grid { grid-template-columns: 1fr 1fr; }
@@ -600,7 +602,7 @@
     <div class="brand-lockup">
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-name">Scarlett MixControl</span>
-      <span class="brand-context">Control surface</span>
+      <span class="brand-context">18i8 | 1st generation</span>
     </div>
     <div class="topbar-tools">
       <div class="theme-toggle" id="theme-toggle-label" data-theme="dark" title="Switch between light and dark themes">
@@ -615,19 +617,19 @@
   <main>
     <div class="page-heading">
       <div>
-        <p class="eyebrow">Offline playground</p>
+        <p class="eyebrow">Scarlett 18i8 | 1st generation</p>
         <h1>MixControl</h1>
-        <p class="page-note">Input 1-2 mode is controllable. Mixer and routing remain simulated.</p>
+        <p class="page-note">Built for the Scarlett 18i8 1st gen. Inputs 1-18 have live meters; faders and routing remain simulated.</p>
       </div>
-      <span class="offline-tag">Input mode live | mixer and routing simulated</span>
+      <span class="offline-tag">Inputs 1-18 live meters | routing simulated</span>
     </div>
 
     <section class="global-controls" aria-label="Global device controls">
       <div class="control-cell">
         <label for="device-select">Simulation profile</label>
         <select id="device-select">
-          <option>Scarlett 18i20</option>
-          <option>Scarlett 18i8</option>
+          <option value="Scarlett 18i8" selected>Scarlett 18i8 (1st Gen)</option>
+          <option value="Scarlett 18i20">Scarlett 18i20</option>
           <option>Scarlett 18i6</option>
           <option>Scarlett 8i6</option>
           <option>Scarlett 6i6</option>
@@ -671,26 +673,27 @@
     <section class="view active" id="view-mixer" role="tabpanel" aria-labelledby="tab-mixer">
       <div class="section-head">
         <h2>Monitor mix</h2>
-        <span class="section-detail">Faders and meters are simulated. No audio is captured or played.</span>
+        <span class="section-detail">All 18 CoreAudio input meters are live. Faders, pan, M/S, and Playback/Monitor strips remain simulated.</span>
       </div>
       <div class="mixer-toolbar">
         <div>
           <button class="signal-button" id="signal-toggle" type="button" aria-pressed="false">Start meter demo</button>
+          <button class="signal-button" id="live-input-toggle" type="button" aria-pressed="false">Start input meters</button>
           <span class="signal-status" id="signal-status">Meters idle</span>
         </div>
         <span class="section-detail">Drag a fader | pan | toggle M / S</span>
       </div>
-      <div class="channel-grid" id="channel-grid" aria-label="Mixer channels"></div>
+      <div class="channel-grid" id="channel-grid" aria-label="18 live CoreAudio input meters and simulated playback and monitor strips"></div>
     </section>
 
     <section class="view" id="view-routing" role="tabpanel" aria-labelledby="tab-routing">
       <div class="section-head">
         <h2>Output routing</h2>
-        <span class="section-detail">The original 18i20 routing artwork is included below; selectors are local mock state.</span>
+        <span class="section-detail">18i8 1st-gen output reference; selectors remain simulated.</span>
       </div>
       <div class="routing-layout">
         <div>
-          <img class="routing-art" id="routing-art" src="target/Scarlett%20MixControl.app/Contents/Resources/Bg18i20Routing.png" alt="Scarlett routing surface showing line, ADAT, and S/PDIF output groups">
+          <img class="routing-art" id="routing-art" src="target/Scarlett%20MixControl.app/Contents/Resources/Bg18i8Routing.png" alt="Scarlett 18i8 first-generation routing reference for outputs 3 through 6 and S/PDIF">
           <div class="routing-art-fallback" id="routing-art-fallback" hidden>
             <strong>Original routing artwork not included</strong>
             <span>The app bundle is kept local; routing controls below remain simulated.</span>
@@ -698,7 +701,7 @@
           <div class="routing-list" id="routing-list"></div>
         </div>
         <aside class="route-note">
-          <strong>Try a reroute.</strong> Change Line Output 1 to Playback 3, then change the sample rate above. These controls update only this page; nothing is sent to an interface.
+          <strong>Try a reroute.</strong> Change Output 3 to Playback 3. This control updates only this page; no hardware routing is changed.
         </aside>
       </div>
     </section>
@@ -725,7 +728,7 @@
               <tr><th scope="row">macOS default output</th><td id="default-output-device">Not checked</td></tr>
               <tr><th scope="row">Nominal sample rate</th><td id="live-sample-rate">Not checked</td></tr>
               <tr><th scope="row">USB interfaces</th><td id="live-interfaces">Not checked</td></tr>
-              <tr><th scope="row">Simulation profile</th><td id="device-profile-readout">Scarlett 18i20</td></tr>
+              <tr><th scope="row">Simulation profile</th><td id="device-profile-readout">Scarlett 18i8</td></tr>
               <tr><th scope="row">Simulation clock</th><td id="clock-readout">Internal</td></tr>
               <tr><th scope="row">Simulation rate</th><td id="rate-readout">48 kHz</td></tr>
             </tbody>
@@ -938,25 +941,29 @@
     });
 
     const channels = [
-      { name: "Analogue 1", kind: "Hardware input", stereo: false, level: -8, pan: -12 },
-      { name: "Analogue 2", kind: "Hardware input", stereo: false, level: -10, pan: 10 },
-      { name: "Analogue 3/4", kind: "Hardware input", stereo: true, level: -14, pan: 0 },
+      { name: "Analogue 1", kind: "Hardware input", inputChannels: [1], stereo: false, level: -8, pan: 0 },
+      { name: "Analogue 2", kind: "Hardware input", inputChannels: [2], stereo: false, level: -10, pan: 0 },
+      { name: "Analogue 3/4", kind: "Hardware input", inputChannels: [3, 4], stereo: true, level: -14, pan: 0 },
       { name: "Playback 1/2", kind: "DAW return", stereo: true, level: -4, pan: 0 },
       { name: "Playback 3/4", kind: "DAW return", stereo: true, level: -18, pan: 0 },
-      { name: "Monitor", kind: "Main output", stereo: true, level: -6, pan: 0 }
+      { name: "Monitor", kind: "Main output", stereo: true, level: -6, pan: 0 },
+      ...Array.from({ length: 14 }, (_, index) => ({
+        name: `Input ${index + 5}`,
+        kind: "CoreAudio input",
+        inputChannels: [index + 5],
+        stereo: false,
+        level: -12,
+        pan: 0
+      }))
     ];
     const routing = [
-      ["Line Output 1", "Line"], ["Line Output 2", "Line"], ["Line Output 3", "Line"],
-      ["Line Output 4", "Line"], ["Line Output 5", "Line"], ["Line Output 6", "Line"],
-      ["Line Output 7", "Line"], ["Line Output 8", "Line"], ["Line Output 9", "Line"],
-      ["Line Output 10", "Line"], ["ADAT Output 1", "ADAT"], ["ADAT Output 2", "ADAT"],
-      ["ADAT Output 3", "ADAT"], ["ADAT Output 4", "ADAT"], ["ADAT Output 5", "ADAT"],
-      ["ADAT Output 6", "ADAT"], ["ADAT Output 7", "ADAT"], ["ADAT Output 8", "ADAT"],
-      ["S/PDIF Output 1", "Digital"], ["S/PDIF Output 2", "Digital"],
-      ["Loop Back 1", "Loopback"], ["Loop Back 2", "Loopback"]
+      ["Output 3", "Headphone"], ["Output 4", "Headphone"],
+      ["Output 5", "Headphone"], ["Output 6", "Headphone"],
+      ["S/PDIF Output 1", "Digital"], ["S/PDIF Output 2", "Digital"]
     ];
     const routeSources = ["Mix 1", "Mix 2", "Playback 1", "Playback 2", "Playback 3", "Playback 4", "Analogue 1", "Analogue 2", "Mute"];
-    const pageState = { signal: false, timer: null };
+    const pageState = { signal: false, timer: null, liveInput: null };
+    const liveInputChannels = channels.flatMap((channel) => channel.inputChannels || []);
 
     const channelGrid = document.querySelector("#channel-grid");
     const toast = document.querySelector("#toast");
@@ -971,15 +978,17 @@
 
     function channelMarkup(channel, index) {
       const meterCount = channel.stereo ? 2 : 1;
-      return `<article class="channel" data-channel="${index}" data-active="false">
-        <div class="channel-name">${channel.name}<div class="channel-kind">${channel.kind}</div></div>
-        <div class="meter-row" aria-label="${channel.stereo ? "Stereo" : "Mono"} simulated level meter">
+      const liveInput = Boolean(channel.inputChannels);
+      const panValue = Number(channel.pan);
+      return `<article class="channel" data-channel="${index}" data-live-input="${liveInput}" data-active="false">
+        <div class="channel-name">${channel.name}<div class="channel-kind">${liveInput ? `${channel.kind} | live capable` : `${channel.kind} | simulated`}</div></div>
+        <div class="meter-row" aria-label="${liveInput ? "Live-capable" : "Simulated"} ${channel.stereo ? "stereo" : "mono"} level meter">
           ${Array.from({ length: meterCount }, () => `<div class="meter"><div class="meter-level"></div><div class="meter-scale"></div></div>`).join("")}
         </div>
-        <div class="meter-value" data-meter-value>-inf dB</div>
+        <div class="meter-value" data-meter-value>-inf dBFS</div>
         <div class="fader-wrap"><input class="fader" type="range" min="-60" max="6" value="${channel.level}" aria-label="${channel.name} level"></div>
         <div class="fader-value" data-fader-value>${channel.level} dB</div>
-        <div class="pan-row"><div class="pan-labels"><span>L</span><span>Pan</span><span>R</span></div>
+        <div class="pan-row"><div class="pan-labels"><span>L</span><output class="pan-value" data-pan-value>${panValue > 0 ? "+" : ""}${panValue}</output><span>R</span></div>
           <input class="pan" type="range" min="-50" max="50" value="${channel.pan}" aria-label="${channel.name} pan"></div>
         <div class="switch-row">
           <button class="switch" type="button" data-kind="mute" aria-pressed="false" aria-label="Mute ${channel.name}">M</button>
@@ -997,6 +1006,13 @@
       });
     });
 
+    document.querySelectorAll(".pan").forEach((pan) => {
+      pan.addEventListener("input", () => {
+        const value = Number(pan.value);
+        pan.closest(".channel").querySelector("[data-pan-value]").textContent = `${value > 0 ? "+" : ""}${value}`;
+      });
+    });
+
     document.querySelectorAll(".switch").forEach((button) => {
       button.addEventListener("click", () => {
         const nextState = button.getAttribute("aria-pressed") !== "true";
@@ -1007,13 +1023,14 @@
 
     function updateMeters() {
       document.querySelectorAll(".channel").forEach((channel, index) => {
+        if (channel.dataset.liveInput === "true" && pageState.liveInput) return;
         const muted = channel.querySelector('[data-kind="mute"]').getAttribute("aria-pressed") === "true";
         const fader = Number(channel.querySelector(".fader").value);
         const levels = channel.querySelectorAll(".meter-level");
         const value = channel.querySelector("[data-meter-value]");
         if (!pageState.signal || muted) {
           levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
-          value.textContent = "-inf dB";
+          value.textContent = "-inf dBFS";
           return;
         }
         const base = Math.max(8, Math.min(88, 63 + fader * .75));
@@ -1021,11 +1038,12 @@
           const variation = Math.random() * 19 + Math.sin(Date.now() / 270 + index * 2 + meterIndex) * 8;
           meter.style.setProperty("--level", `${Math.max(5, Math.min(92, base - variation))}%`);
         });
-        value.textContent = `${Math.round(-18 + Math.random() * 7)} dB`;
+        value.textContent = `${Math.round(-18 + Math.random() * 7)} dBFS`;
       });
     }
 
     document.querySelector("#signal-toggle").addEventListener("click", (event) => {
+      if (pageState.liveInput) stopLiveInputMeter();
       pageState.signal = !pageState.signal;
       event.currentTarget.setAttribute("aria-pressed", String(pageState.signal));
       event.currentTarget.textContent = pageState.signal ? "Stop meter demo" : "Start meter demo";
@@ -1039,6 +1057,110 @@
         updateMeters();
       }
     });
+
+    const liveInputButton = document.querySelector("#live-input-toggle");
+    const demoButton = document.querySelector("#signal-toggle");
+    const liveInputStrips = channels.flatMap((channel, index) => {
+      if (!channel.inputChannels) return [];
+      const element = document.querySelector(`.channel[data-channel="${index}"]`);
+      return [{
+        channels: channel.inputChannels,
+        element,
+        levels: [...element.querySelectorAll(".meter-level")],
+        value: element.querySelector("[data-meter-value]"),
+        kind: element.querySelector(".channel-kind"),
+        row: element.querySelector(".meter-row")
+      }];
+    });
+
+    function renderLiveInputMeters(frames) {
+      const activeFrames = frames.filter((frame) => frame.frames > 0);
+      if (activeFrames.length === 0) return;
+
+      for (const strip of liveInputStrips) {
+        const stripFrames = activeFrames.filter((frame) => strip.channels.includes(frame.channel));
+        if (stripFrames.length === 0) {
+          strip.kind.textContent = `No samples | Inputs ${strip.channels.join("/")}`;
+          strip.value.textContent = "No data";
+          strip.value.title = "No CoreAudio frames received for this input";
+          strip.levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
+          continue;
+        }
+        for (const frame of stripFrames) {
+          const meterIndex = strip.channels.indexOf(frame.channel);
+          const level = Math.max(3, levelToHistoryPercent(frame.rmsDbFS));
+          strip.levels[meterIndex].style.setProperty("--level", `${level}%`);
+        }
+        const inputNames = strip.channels.map((channel) => `Input ${channel}`);
+        strip.kind.textContent = `CoreAudio | live ${inputNames.join("/")}`;
+        strip.value.textContent = stripFrames.length === 1
+          ? `${stripFrames[0].rmsDbFS.toFixed(1)} dBFS`
+          : `${stripFrames.map((frame) => frame.rmsDbFS.toFixed(0)).join(" / ")} dBFS`;
+        strip.value.title = stripFrames
+          .map((frame) => `Input ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS | peak ${frame.peakDbFS.toFixed(1)} dBFS`)
+          .join("; ");
+        strip.row.setAttribute(
+          "aria-label",
+          stripFrames.map((frame) => `Live Input ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS; peak ${frame.peakDbFS.toFixed(1)} dBFS`).join(". ")
+        );
+      }
+      const peak = Math.max(...activeFrames.map((frame) => frame.peakDbFS));
+      document.querySelector("#signal-status").textContent = `Inputs 1-18 live | peak ${peak.toFixed(1)} dBFS`;
+    }
+
+    function stopLiveInputMeter() {
+      if (pageState.liveInput) pageState.liveInput.close();
+      pageState.liveInput = null;
+      liveInputButton.setAttribute("aria-pressed", "false");
+      liveInputButton.textContent = "Start input meters";
+      demoButton.disabled = false;
+      for (const strip of liveInputStrips) {
+        const inputNames = strip.channels.map((channel) => `Input ${channel}`);
+        strip.kind.textContent = `${inputNames.join("/")} | live capable`;
+        strip.value.textContent = "-inf dBFS";
+        strip.value.title = "Live input meters are stopped";
+        strip.levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
+        strip.row.setAttribute("aria-label", `Live-capable input meters: ${inputNames.join(", ")}`);
+      }
+      document.querySelector("#signal-status").textContent = pageState.signal ? "Synthetic signal active" : "Meters idle";
+    }
+
+    liveInputButton.addEventListener("click", () => {
+      if (pageState.liveInput) {
+        stopLiveInputMeter();
+        return;
+      }
+      if (pageState.signal) {
+        pageState.signal = false;
+        clearInterval(pageState.timer);
+        pageState.timer = null;
+        demoButton.setAttribute("aria-pressed", "false");
+        demoButton.textContent = "Start meter demo";
+        updateMeters();
+      }
+      liveInputButton.setAttribute("aria-pressed", "true");
+      liveInputButton.textContent = "Stop input meters";
+      demoButton.disabled = true;
+      for (const strip of liveInputStrips) {
+        strip.kind.textContent = `Connecting | Inputs ${strip.channels.join("/")}`;
+      }
+      document.querySelector("#signal-status").textContent = "Connecting to Scarlett Inputs 1-18...";
+      const source = new EventSource(`/api/live-input-meters?channels=${liveInputChannels.join(",")}`);
+      pageState.liveInput = source;
+      source.onopen = () => {
+        document.querySelector("#signal-status").textContent = "Scarlett Inputs 1-18 live | RMS meters";
+      };
+      source.onmessage = (event) => {
+        renderLiveInputMeters(JSON.parse(event.data));
+      };
+      source.onerror = () => {
+        if (pageState.liveInput === source) {
+          document.querySelector("#signal-status").textContent = "Input meter stream reconnecting or unavailable";
+        }
+      };
+    });
+
+    window.addEventListener("pagehide", stopLiveInputMeter);
 
     const routeList = document.querySelector("#routing-list");
     const routingArt = document.querySelector("#routing-art");
@@ -1103,7 +1225,10 @@
         if (!channel) return;
         channel.querySelector(".fader").value = saved.level;
         channel.querySelector("[data-fader-value]").textContent = `${saved.level} dB`;
-        channel.querySelector(".pan").value = saved.pan;
+        const pan = channel.querySelector(".pan");
+        pan.value = saved.pan;
+        const panValue = Number(saved.pan);
+        channel.querySelector("[data-pan-value]").textContent = `${panValue > 0 ? "+" : ""}${panValue}`;
         channel.querySelector('[data-kind="mute"]').setAttribute("aria-pressed", saved.mute);
         channel.querySelector('[data-kind="solo"]').setAttribute("aria-pressed", saved.solo);
       });
@@ -1140,9 +1265,10 @@
         const snapshot = await response.json();
         if (!response.ok) throw new Error(snapshot.error || "The local probe failed.");
 
-        const audioDevice = snapshot.audioDevices.find((device) => /scarlett/i.test(device.name));
-        const usbDevice = snapshot.usbDevices.find((device) => /scarlett/i.test(device.productName))
-          || snapshot.usbDevices.find((device) => /focusrite/i.test(device.manufacturer));
+          const audioDevice = snapshot.audioDevices.find((device) => device.name === "Scarlett 18i8 USB");
+          const usbDevice = snapshot.usbDevices.find((device) =>
+            device.productName === "Scarlett 18i8 USB" && device.vendorID === 0x1235 && device.productID === 0x8014
+          );
         const interfaces = [...(snapshot.usbInterfaces || [])].sort((left, right) => left.number - right.number);
         const audioControl = interfaces.filter((item) => item.kind === "Audio Control").map((item) => item.number);
         const dfu = interfaces.find((item) => item.kind === "DFU");
@@ -1164,8 +1290,14 @@
           : "Unavailable";
         document.querySelector("#default-input-device").textContent = snapshot.defaultInputDeviceName || "Unavailable";
         document.querySelector("#default-output-device").textContent = snapshot.defaultOutputDeviceName || "Unavailable";
+        const targetDeviceName = "Scarlett 18i8 USB";
+        const preferReferenceDevice = (devices) => [...devices].sort(
+          (left, right) => Number(right.name === targetDeviceName) - Number(left.name === targetDeviceName)
+        );
         const inputSelect = document.querySelector("#default-input-select");
-        const inputDevices = (snapshot.audioDevices || []).filter((device) => (device.inputChannels || 0) > 0);
+        const inputDevices = preferReferenceDevice(
+          (snapshot.audioDevices || []).filter((device) => (device.inputChannels || 0) > 0)
+        );
         inputSelect.replaceChildren();
         for (const device of inputDevices) {
           const option = document.createElement("option");
@@ -1174,13 +1306,16 @@
           inputSelect.append(option);
         }
         const currentInput = inputDevices.find((device) => device.name === snapshot.defaultInputDeviceName);
-        if (currentInput) inputSelect.value = String(currentInput.deviceID);
+        const preferredInput = inputDevices.find((device) => device.name === targetDeviceName) || currentInput;
+        if (preferredInput) inputSelect.value = String(preferredInput.deviceID);
         inputSelect.disabled = inputDevices.length === 0;
         document.querySelector("#default-input-result").textContent = currentInput
-          ? `Current system input: ${currentInput.name}. Choose another device, then apply.`
+          ? `Current: ${currentInput.name}. Selected for Apply: ${preferredInput?.name || currentInput.name}.`
           : "No available macOS input device was reported.";
         const outputSelect = document.querySelector("#default-output-select");
-        const outputDevices = (snapshot.audioDevices || []).filter((device) => (device.outputChannels || 0) > 0);
+          const outputDevices = preferReferenceDevice(
+            (snapshot.audioDevices || []).filter((device) => (device.outputChannels || 0) > 0)
+          );
         outputSelect.replaceChildren();
         for (const device of outputDevices) {
           const option = document.createElement("option");
@@ -1189,10 +1324,11 @@
           outputSelect.append(option);
         }
         const currentOutput = outputDevices.find((device) => device.name === snapshot.defaultOutputDeviceName);
-        if (currentOutput) outputSelect.value = String(currentOutput.deviceID);
+        const preferredOutput = outputDevices.find((device) => device.name === targetDeviceName) || currentOutput;
+        if (preferredOutput) outputSelect.value = String(preferredOutput.deviceID);
         outputSelect.disabled = outputDevices.length === 0;
         document.querySelector("#default-output-result").textContent = currentOutput
-          ? `Current system output: ${currentOutput.name}. Choose another device, then apply.`
+          ? `Current: ${currentOutput.name}. Selected for Apply: ${preferredOutput?.name || currentOutput.name}.`
           : "No available macOS output device was reported.";
         const hardwareRateSelect = document.querySelector("#hardware-rate-select");
         const supportedRates = (audioDevice?.supportedSampleRateRanges || [])
@@ -1497,7 +1633,16 @@
       inputPadResult.textContent = `Reading Input ${channel} PAD state...`;
       try {
         const response = await fetch(`/api/input-pad?channel=${channel}`, { cache: "no-store" });
-        const payload = await response.json();
+        const responseText = await response.text();
+        let payload;
+        try {
+          payload = JSON.parse(responseText);
+        } catch {
+          const message = response.status === 404
+            ? "PAD API not found. Restart node tools/playground-server.mjs and reload this page."
+            : "PAD API returned an invalid response.";
+          throw new Error(message);
+        }
         if (!response.ok) throw new Error(payload.error || "PAD read failed.");
         inputPadEnabled.checked = Boolean(payload.pad);
         inputPadEnabled.disabled = false;
@@ -1527,7 +1672,16 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ channel, enabled })
         });
-        const payload = await response.json();
+        const responseText = await response.text();
+        let payload;
+        try {
+          payload = JSON.parse(responseText);
+        } catch {
+          const message = response.status === 404
+            ? "PAD API not found. Restart node tools/playground-server.mjs and reload this page."
+            : "PAD API returned an invalid response.";
+          throw new Error(message);
+        }
         if (!response.ok) throw new Error(payload.error || "PAD change failed.");
         inputPadEnabled.checked = Boolean(payload.pad);
         inputPadResult.textContent = `Input ${payload.channel} PAD set ${payload.pad ? "on" : "off"}; read-back verified.`;

@@ -200,6 +200,63 @@ function measureAllInputLevels(response) {
   );
 }
 
+function streamInputMeter(response, channels) {
+  const probeArgumentsForStream = channels.length === 1
+    ? ["--stream-input-meter", String(channels[0])]
+    : ["--stream-input-meters", channels.join(",")];
+  const child = spawn("swift", probeArguments(...probeArgumentsForStream), {
+    cwd: workspaceRoot,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let outputBuffer = "";
+  let stderr = "";
+  let disconnected = false;
+
+  response.writeHead(200, {
+    "Cache-Control": "no-cache, no-transform",
+    "Connection": "keep-alive",
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "X-Accel-Buffering": "no",
+    "X-Content-Type-Options": "nosniff"
+  });
+  response.flushHeaders();
+
+  const stop = () => {
+    if (disconnected) return;
+    disconnected = true;
+    child.kill("SIGTERM");
+  };
+
+  response.on("close", stop);
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    outputBuffer += chunk;
+    const lines = outputBuffer.split("\n");
+    outputBuffer = lines.pop() || "";
+    for (const line of lines) {
+      if (line.trim() && !response.destroyed) response.write(`data: ${line}\n\n`);
+    }
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+    if (stderr.length > 4000) stderr = stderr.slice(-4000);
+  });
+  child.on("error", (error) => {
+    if (disconnected || response.writableEnded) return;
+    response.write(`event: error\ndata: ${JSON.stringify({ error: `Could not start the Swift meter: ${error.message}` })}\n\n`);
+    response.end();
+  });
+  child.on("close", (exitCode) => {
+    if (disconnected || response.writableEnded) return;
+    if (outputBuffer.trim() && exitCode === 0) response.write(`data: ${outputBuffer}\n\n`);
+    if (exitCode !== 0) {
+      response.write(`event: error\ndata: ${JSON.stringify({ error: "The live input meter stopped.", detail: stderr.trim() })}\n\n`);
+    }
+    response.end();
+  });
+}
+
 const server = createServer(async (request, response) => {
   let pathname;
   let parsedURL;
@@ -209,6 +266,32 @@ const server = createServer(async (request, response) => {
   } catch {
     response.writeHead(400);
     return response.end("Invalid URL.\n");
+  }
+
+  if (pathname === "/api/live-input-meter") {
+    if (request.method !== "GET") {
+      response.writeHead(405, { Allow: "GET" });
+      return response.end("The live input meter uses GET with a server-sent event stream.\n");
+    }
+    const channel = Number(parsedURL.searchParams.get("channel"));
+    if (channel !== 1) {
+      return sendJSON(response, 400, { error: "The live meter currently supports Input 1 only." });
+    }
+    return streamInputMeter(response, [channel]);
+  }
+
+  if (pathname === "/api/live-input-meters") {
+    if (request.method !== "GET") {
+      response.writeHead(405, { Allow: "GET" });
+      return response.end("Live input meters use GET with a server-sent event stream.\n");
+    }
+    const channelValues = parsedURL.searchParams.get("channels")?.split(",") || [];
+    const channels = channelValues.map(Number);
+    if (channels.length === 0 || channels.some((channel) => !Number.isInteger(channel) || channel < 1 || channel > 18)
+        || new Set(channels).size !== channels.length) {
+      return sendJSON(response, 400, { error: "Choose unique CoreAudio input channels from 1 to 18." });
+    }
+    return streamInputMeter(response, channels);
   }
 
   if (pathname === "/api/input-scan") {

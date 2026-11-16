@@ -150,6 +150,26 @@ do {
         exit(EXIT_SUCCESS)
     }
 
+    if let optionIndex = CommandLine.arguments.firstIndex(of: "--stream-input-meters") {
+        guard CommandLine.arguments.indices.contains(optionIndex + 1) else {
+            throw ProbeError.coreAudio(kIOReturnBadArgument, "Usage: --stream-input-meters <comma-separated channels>")
+        }
+        let channelArguments = CommandLine.arguments[optionIndex + 1].split(separator: ",")
+        let channels = channelArguments.compactMap { Int($0) }
+        guard !channelArguments.isEmpty, channels.count == channelArguments.count else {
+            throw ProbeError.coreAudio(kIOReturnBadArgument, "Input channels must be comma-separated integers")
+        }
+        try streamInputSignals(channels: channels)
+    }
+
+    if let optionIndex = CommandLine.arguments.firstIndex(of: "--stream-input-meter") {
+        guard CommandLine.arguments.indices.contains(optionIndex + 1),
+              let channel = Int(CommandLine.arguments[optionIndex + 1]) else {
+            throw ProbeError.coreAudio(kIOReturnBadArgument, "Usage: --stream-input-meter <1-18>")
+        }
+        try streamInputSignal(channel: channel)
+    }
+
     if let optionIndex = CommandLine.arguments.firstIndex(of: "--read-input-gain") {
         guard CommandLine.arguments.indices.contains(optionIndex + 1),
               let channel = Int(CommandLine.arguments[optionIndex + 1]) else {

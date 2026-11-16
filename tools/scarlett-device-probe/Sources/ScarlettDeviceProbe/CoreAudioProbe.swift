@@ -1,4 +1,5 @@
 import CoreAudio
+import Dispatch
 import Foundation
 
 func address(
@@ -549,6 +550,177 @@ func measureInputSignals(
             peakDbFS: 20 * log10(max(peaks[channelIndex], 1e-12))
         )
     }
+}
+
+private final class InputMeterAccumulator {
+    private var sumSquares: Double = 0.0
+    private var peak: Double = 0.0
+    private var frames: UInt64 = 0
+
+    func add(sumSquares: Double, peak: Double, frames: UInt64) {
+        self.sumSquares += sumSquares
+        self.peak = max(self.peak, peak)
+        self.frames += frames
+    }
+
+    func take() -> (sumSquares: Double, peak: Double, frames: UInt64) {
+        let value: (Double, Double, UInt64) = (sumSquares, peak, frames)
+        sumSquares = 0
+        peak = 0
+        frames = 0
+        return value
+    }
+}
+
+func streamInputSignal(channel: Int, intervalMilliseconds: Int = 50) throws -> Never {
+    try streamInputSignals(channels: [channel], intervalMilliseconds: intervalMilliseconds)
+}
+
+func streamInputSignals(channels: [Int], intervalMilliseconds: Int = 50) throws -> Never {
+    let deviceIDs: [AudioObjectID] = try readDeviceIDs()
+    var selectedDevice: AudioObjectID?
+    for deviceID: UInt32 in deviceIDs {
+        if let name: String = try? readString(deviceID, selector: kAudioObjectPropertyName),
+           name == "Scarlett 18i8 USB" {
+            selectedDevice = deviceID
+            break
+        }
+    }
+    guard let selectedDevice else {
+        throw ProbeError.coreAudio(kAudioHardwareBadDeviceError, "Scarlett 18i8 USB is not an audio device")
+    }
+
+    let channelCount = try readChannelCount(selectedDevice, scope: kAudioObjectPropertyScopeInput)
+    guard !channels.isEmpty,
+          Set(channels).count == channels.count,
+          channels.allSatisfy({ (1...channelCount).contains($0) }) else {
+        throw ProbeError.coreAudio(kIOReturnBadArgument, "Input channels must be unique values between 1 and \(channelCount)")
+    }
+    guard intervalMilliseconds >= 20, intervalMilliseconds <= 1000 else {
+        throw ProbeError.coreAudio(kIOReturnBadArgument, "Meter stream interval must be between 20 and 1000 ms")
+    }
+
+    var streamAddress = address(kAudioDevicePropertyStreams, scope: kAudioObjectPropertyScopeInput)
+    var streamsSize: UInt32 = 0
+    try check(
+        AudioObjectGetPropertyDataSize(selectedDevice, &streamAddress, 0, nil, &streamsSize),
+        operation: "Read Scarlett input-stream list size"
+    )
+    let streamStride = MemoryLayout<AudioStreamID>.stride
+    guard streamsSize >= UInt32(streamStride), Int(streamsSize) % streamStride == 0 else {
+        throw ProbeError.unexpectedDataSize(streamsSize, streamStride)
+    }
+    var streams = [AudioStreamID](repeating: 0, count: Int(streamsSize) / streamStride)
+    try streams.withUnsafeMutableBytes { buffer in
+        guard let baseAddress = buffer.baseAddress else { return }
+        try check(
+            AudioObjectGetPropertyData(selectedDevice, &streamAddress, 0, nil, &streamsSize, baseAddress),
+            operation: "Read Scarlett input-stream list"
+        )
+    }
+    guard let inputStream = streams.first else {
+        throw ProbeError.coreAudio(kAudioHardwareBadDeviceError, "Scarlett has no input stream")
+    }
+
+    var formatAddress = address(kAudioStreamPropertyVirtualFormat)
+    var streamFormat = AudioStreamBasicDescription()
+    var formatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+    try check(
+        AudioObjectGetPropertyData(inputStream, &formatAddress, 0, nil, &formatSize, &streamFormat),
+        operation: "Read Scarlett input sample format"
+    )
+    guard streamFormat.mFormatID == kAudioFormatLinearPCM,
+          streamFormat.mFormatFlags & kAudioFormatFlagIsFloat != 0,
+          streamFormat.mBitsPerChannel == 32,
+            streamFormat.mChannelsPerFrame >= UInt32(channels.max() ?? 0) else {
+        throw ProbeError.coreAudio(kAudioHardwareUnspecifiedError, "Unsupported Scarlett input format for meter stream")
+    }
+
+        let channelIndexes = Set(channels.map { $0 - 1 })
+        let accumulators = Dictionary(uniqueKeysWithValues: channels.map { ($0 - 1, InputMeterAccumulator()) })
+    let captureQueue = DispatchQueue(label: "ScarlettDeviceProbe.liveMeterCapture", qos: .userInitiated)
+    let outputQueue = DispatchQueue(label: "ScarlettDeviceProbe.liveMeterOutput", qos: .utility)
+    var ioProcID: AudioDeviceIOProcID?
+    let createStatus = AudioDeviceCreateIOProcIDWithBlock(
+        &ioProcID,
+        selectedDevice,
+        captureQueue
+    ) { _, inputData, _, _, _ in
+        let buffers = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: inputData))
+        var channelOffset = 0
+
+        for buffer in buffers {
+            let bufferChannels = Int(buffer.mNumberChannels)
+            if let data = buffer.mData, bufferChannels > 0 {
+                let samples = data.assumingMemoryBound(to: Float32.self)
+                let sampleCount = Int(buffer.mDataByteSize) / MemoryLayout<Float32>.stride
+                let frames = sampleCount / bufferChannels
+                for bufferChannel in 0..<bufferChannels {
+                    let channelIndex = channelOffset + bufferChannel
+                    guard channelIndex < channelCount,
+                          channelIndexes.contains(channelIndex),
+                          let accumulator = accumulators[channelIndex] else {
+                        continue
+                    }
+                    var sumSquares = 0.0
+                    var peak = 0.0
+                    for frame in 0..<frames {
+                        let sample = Double(samples[frame * bufferChannels + bufferChannel])
+                        sumSquares += sample * sample
+                        peak = max(peak, abs(sample))
+                    }
+                    accumulator.add(sumSquares: sumSquares, peak: peak, frames: UInt64(frames))
+                }
+            }
+            channelOffset += bufferChannels
+        }
+    }
+    try check(createStatus, operation: "Create Scarlett live meter callback")
+    guard let ioProcID else {
+        throw ProbeError.coreAudio(kAudioHardwareBadDeviceError, "Create Scarlett live meter callback")
+    }
+    try check(AudioDeviceStart(selectedDevice, ioProcID), operation: "Start Scarlett live input meter")
+
+    let encoder = JSONEncoder()
+    let timer = DispatchSource.makeTimerSource(queue: outputQueue)
+    timer.schedule(deadline: .now(), repeating: .milliseconds(intervalMilliseconds), leeway: .milliseconds(5))
+    timer.setEventHandler {
+        captureQueue.async {
+            let frames = channels.sorted().compactMap { channel -> InputMeterStreamFrame? in
+                guard let accumulator = accumulators[channel - 1] else { return nil }
+                let interval = accumulator.take()
+                let rms = interval.frames > 0
+                    ? sqrt(interval.sumSquares / Double(interval.frames))
+                    : 0
+                return InputMeterStreamFrame(
+                    device: "Scarlett 18i8 USB",
+                    channel: channel,
+                    sampleRateHz: streamFormat.mSampleRate,
+                    frames: interval.frames,
+                    rmsDbFS: 20 * log10(max(rms, 1e-12)),
+                    peakDbFS: 20 * log10(max(interval.peak, 1e-12))
+                )
+            }
+            outputQueue.async {
+                if let data = try? encoder.encode(frames) {
+                    FileHandle.standardOutput.write(data)
+                    FileHandle.standardOutput.write(Data([0x0A]))
+                }
+            }
+        }
+    }
+    timer.resume()
+
+    Darwin.signal(SIGTERM, SIG_IGN)
+    let termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: outputQueue)
+    termination.setEventHandler {
+        timer.cancel()
+        _ = AudioDeviceStop(selectedDevice, ioProcID)
+        _ = AudioDeviceDestroyIOProcID(selectedDevice, ioProcID)
+        exit(EXIT_SUCCESS)
+    }
+    termination.resume()
+    dispatchMain()
 }
 
 func readSampleRateRanges(_ objectID: AudioObjectID) throws -> [SampleRateRangeSnapshot] {
