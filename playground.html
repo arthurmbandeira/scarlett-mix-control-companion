@@ -1,0 +1,1733 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101416">
+  <title>Scarlett MixControl Playground</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #e8edeb;
+      --muted: #9aa5a5;
+      --line: #343c3f;
+      --paper: #111618;
+      --panel: #1b2225;
+      --dark: #090d0f;
+      --dark-2: #232a2d;
+      --red: #e63b42;
+      --red-dark: #c72e35;
+      --green: #66c989;
+      --amber: #e2b656;
+      --font: "Avenir Next", "Trebuchet MS", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--font);
+      font-size: 14px;
+    }
+
+    button, input, select { font: inherit; }
+    button, select { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 30px;
+      color: #f6f6f3;
+      background: var(--dark);
+      border-bottom: 3px solid var(--red);
+    }
+
+    .brand-lockup { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 11px;
+      height: 28px;
+      background: var(--red);
+      border-radius: 1px;
+    }
+    .brand-name { font-size: 15px; font-weight: 700; letter-spacing: 0; }
+    .brand-context {
+      color: #9da5a6;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #c4cbca;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 0 3px #e5b75922;
+    }
+    .connection-dot[data-connected="true"] {
+      background: var(--green);
+      box-shadow: 0 0 0 3px #78c99522;
+    }
+    .topbar-tools { display: flex; align-items: center; gap: 20px; }
+    .theme-toggle { position: relative; display: inline-flex; align-items: center; gap: 7px; color: #aab4b3; font-size: 10px; font-weight: 800; }
+    .theme-toggle .theme-switch {
+      position: relative;
+      display: block;
+      width: 34px;
+      height: 18px;
+      flex: 0 0 34px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid #5b6568;
+      border-radius: 12px;
+      background: #232a2d;
+      cursor: pointer;
+      transition: background .18s ease;
+    }
+    .theme-toggle .theme-switch::before {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      content: "";
+      border-radius: 50%;
+      background: #e8edeb;
+      transition: transform .18s ease;
+    }
+    .theme-toggle .theme-switch[aria-checked="true"] { background: var(--red); border-color: var(--red); }
+    .theme-toggle .theme-switch[aria-checked="true"]::before { transform: translateX(16px); }
+    .theme-toggle[data-theme="dark"] .theme-mode:first-of-type,
+    .theme-toggle[data-theme="light"] .theme-mode:last-of-type { color: #fff; }
+
+    main { max-width: 1580px; margin: 0 auto; padding: 24px 30px 48px; }
+    .page-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: #ff666b;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: 27px; line-height: 1.15; font-weight: 700; }
+    .page-note { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+    .brand-context { color: var(--muted); }
+    .offline-tag {
+      padding: 7px 10px;
+      color: #f0c46d;
+      background: #302719;
+      border: 1px solid #604b28;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .global-controls {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.5fr) minmax(145px, 1fr) minmax(140px, .9fr) minmax(220px, 1.2fr);
+      align-items: end;
+      gap: 1px;
+      margin-bottom: 20px;
+      background: #30383b;
+      border: 1px solid #30383b;
+    }
+    .control-cell { min-height: 72px; padding: 12px 15px; background: #1a2023; }
+    .control-cell label, .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .9px;
+      text-transform: uppercase;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      min-height: 32px;
+      padding: 5px 9px;
+      color: var(--ink);
+      background: #101517;
+      border: 1px solid #424c4f;
+      border-radius: 2px;
+    }
+    .snapshot-actions { display: flex; gap: 7px; }
+    .snapshot-actions input { min-width: 0; flex: 1; }
+    .command-button {
+      min-height: 32px;
+      padding: 6px 11px;
+      color: #fff;
+      background: var(--dark-2);
+      border: 1px solid var(--dark-2);
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .command-button:hover { background: #363d40; }
+    .command-button.primary { background: var(--red); border-color: var(--red); }
+    .command-button.primary:hover { background: var(--red-dark); }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      padding: 0 0 0 3px;
+      border-bottom: 1px solid #3b4447;
+    }
+    .tab {
+      min-width: 112px;
+      padding: 11px 18px;
+      color: #9aa5a5;
+      background: transparent;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--red); }
+    .tab:hover { color: #fff; }
+
+    .view { display: none; padding-top: 18px; }
+    .view.active { display: block; animation: arrive .24s ease-out both; }
+    @keyframes arrive { from { opacity: .55; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 13px;
+    }
+    h2 { margin: 0; font-size: 15px; font-weight: 700; }
+    .section-detail { color: var(--muted); font-size: 11px; }
+
+    .mixer-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 0 13px;
+      padding: 10px 12px;
+      background: #1a2124;
+      border: 1px solid #30393c;
+      border-left: 3px solid var(--red);
+    }
+    .signal-button {
+      padding: 7px 10px;
+      color: #e8edeb;
+      background: #252d30;
+      border: 1px solid #485256;
+      border-radius: 2px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .signal-button[aria-pressed="true"] { color: #a9edbd; background: #1d3828; border-color: #3e7651; }
+    .signal-status { color: var(--muted); font-size: 11px; }
+
+    .channel-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(125px, 1fr));
+      gap: 8px;
+      align-items: stretch;
+    }
+    .channel {
+      min-width: 0;
+      padding: 11px 10px 12px;
+      color: #f1f3f1;
+      background: linear-gradient(155deg, #252d30, #1a2023 58%, #151a1c);
+      border: 1px solid #3b4548;
+      border-top: 3px solid #657174;
+      box-shadow: inset 0 1px #ffffff12;
+    }
+    .channel[data-active="true"] { border-top-color: var(--red); }
+    .channel-name { min-height: 31px; font-size: 11px; font-weight: 800; line-height: 1.3; }
+    .channel-kind { margin-top: 3px; color: #aab2b0; font-size: 9px; text-transform: uppercase; letter-spacing: .6px; }
+    .meter-row { display: flex; justify-content: center; gap: 5px; height: 132px; margin: 12px 0 5px; }
+    .meter {
+      position: relative;
+      width: 10px;
+      height: 100%;
+      overflow: hidden;
+      background: #0e1112;
+      border: 1px solid #58605e;
+      border-radius: 1px;
+    }
+    .meter-scale {
+      position: absolute;
+      inset: 4px 2px;
+      background: repeating-linear-gradient(to top, #87908c 0 1px, transparent 1px 11px);
+      opacity: .28;
+      z-index: 2;
+    }
+    .meter-level {
+      position: absolute;
+      right: 1px;
+      bottom: 1px;
+      left: 1px;
+      height: var(--level, 9%);
+      background: linear-gradient(to top, #6ec487 0 68%, #d6c45d 68% 88%, #d96149 88%);
+      transition: height .24s ease;
+    }
+    .meter-value { min-height: 13px; color: #afb8b5; font: 9px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; }
+    .fader-wrap { display: flex; justify-content: center; height: 135px; margin: 8px 0 4px; }
+    .fader {
+      width: 26px;
+      height: 132px;
+      margin: 0;
+      accent-color: var(--red);
+      writing-mode: vertical-lr;
+      direction: rtl;
+      cursor: ns-resize;
+    }
+    .fader-value { color: #e8ece8; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; }
+    .pan-row { margin-top: 12px; }
+    .pan-labels { display: flex; justify-content: space-between; margin-bottom: 3px; color: #aeb7b4; font-size: 9px; }
+    .pan { width: 100%; height: 14px; margin: 0; accent-color: #d6d9d5; }
+    .switch-row { display: flex; justify-content: center; gap: 7px; margin-top: 9px; }
+    .switch {
+      width: 36px;
+      min-height: 25px;
+      color: #c8cfcc;
+      background: #3a4143;
+      border: 1px solid #606969;
+      border-radius: 2px;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    .switch[aria-pressed="true"] { color: #1a1d1e; background: var(--amber); border-color: var(--amber); }
+    .switch[data-kind="solo"][aria-pressed="true"] { background: #85c8a0; border-color: #85c8a0; }
+    .channel-foot { margin-top: 9px; padding-top: 8px; color: #aab2b0; border-top: 1px solid #ffffff1a; font-size: 9px; text-align: center; }
+
+    .routing-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(290px, .75fr); gap: 18px; align-items: start; }
+    .routing-art {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 0 0 13px;
+      background: #171d20;
+      border: 1px solid #3f4a4d;
+    }
+    .routing-art-fallback {
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 7px;
+      margin-bottom: 13px;
+      padding: 20px;
+      color: #b7c1bf;
+      background: #171d20;
+      border: 1px solid #3f4a4d;
+    }
+    .routing-art-fallback strong { color: #eef2f0; font-size: 13px; }
+    .routing-art-fallback span { color: var(--muted); font-size: 11px; }
+    .routing-list { border-top: 1px solid var(--line); }
+    .route-row {
+      display: grid;
+      grid-template-columns: minmax(115px, .75fr) minmax(190px, 1.25fr);
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .route-name { font-size: 11px; font-weight: 700; }
+    .route-group { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; }
+    .route-source { min-height: 30px; font-size: 11px; }
+    .route-note {
+      padding: 13px 14px;
+      color: #c8d0ce;
+      background: #1b2225;
+      border: 1px solid #343e41;
+      border-left: 3px solid #638575;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .route-note strong { color: var(--ink); }
+
+    .device-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 24px; }
+    .device-status-actions { display: flex; align-items: center; gap: 10px; }
+    .live-check-time { color: var(--muted); font-size: 10px; }
+    .device-table { width: 100%; border-collapse: collapse; }
+    .device-table th, .device-table td { padding: 11px 9px; border-bottom: 1px solid var(--line); text-align: left; }
+    .device-table th { color: var(--muted); font-size: 9px; letter-spacing: .8px; text-transform: uppercase; }
+    .device-table td { font-size: 11px; }
+    .device-table td:last-child { text-align: right; }
+    .device-table thead th { background: #1a2124; }
+    .firmware-list { margin: 11px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+    .firmware-list li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .firmware-list span:last-child { color: var(--muted); }
+    .notice {
+      margin-top: 16px;
+      padding: 11px 13px;
+      color: #f0c46d;
+      background: #2a2419;
+      border: 1px solid #584628;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .input-gain-read {
+      margin-top: 18px;
+      padding: 14px;
+      background: #1a2124;
+      border: 1px solid #30393c;
+      border-left: 3px solid #789484;
+    }
+    .input-gain-read h3 { margin: 0 0 7px; font-size: 12px; }
+    .input-gain-read p { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .input-gain-controls { display: flex; align-items: end; gap: 9px; }
+    .input-gain-channel { width: 105px; }
+    .route-device-select { width: min(380px, 100%); }
+    .pad-toggle-label { display: flex; align-items: center; gap: 7px; min-height: 32px; color: var(--ink); font-size: 11px; font-weight: 700; }
+    .pad-toggle-label input { width: 16px; height: 16px; accent-color: var(--red); }
+    .command-button:disabled { opacity: .48; cursor: not-allowed; }
+    .input-gain-result { min-height: 16px; color: var(--ink) !important; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .signal-meter {
+      display: block;
+      width: 100%;
+      height: 12px;
+      margin-top: 11px;
+      accent-color: #4b9c68;
+    }
+    .signal-meter::-webkit-progress-bar { background: #273033; border-radius: 1px; }
+    .signal-meter::-webkit-progress-value { background: linear-gradient(90deg, #54a875 0 72%, #d6b54f 88%, #d85d49); border-radius: 1px; }
+    .signal-presence {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .signal-presence::before { width: 8px; height: 8px; content: ""; background: #89918d; border-radius: 50%; }
+    .signal-presence[data-state="present"] { color: #245d38; }
+    .signal-presence[data-state="present"]::before { background: #4b9c68; }
+    .signal-threshold { display: grid; grid-template-columns: auto 1fr 58px; align-items: center; gap: 9px; margin-top: 11px; }
+    .signal-threshold label { color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+    .signal-threshold input { width: 100%; accent-color: #4b9c68; }
+    .signal-threshold output { color: var(--ink); font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; }
+    .signal-history { margin-top: 15px; padding-top: 11px; border-top: 1px solid #343c3f; }
+    .signal-history-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .signal-history-head h4 { margin: 0; font-size: 11px; }
+    .signal-history-count { color: var(--muted); font-size: 9px; }
+    .signal-history-list { display: grid; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
+    .signal-history-empty { color: var(--muted); font-size: 10px; }
+    .signal-history-row { display: grid; grid-template-columns: 48px minmax(60px, 1fr) minmax(118px, auto); align-items: center; gap: 8px; padding: 6px 7px; background: #171d20; border: 1px solid #343e41; }
+    .signal-history-time { color: var(--muted); font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .signal-history-bar { position: relative; height: 7px; background: #30393c; }
+    .signal-history-rms { position: absolute; inset: 0 auto 0 0; background: #58996c; }
+    .signal-history-peak { position: absolute; top: -3px; width: 2px; height: 13px; background: #d64b41; transform: translateX(-1px); }
+    .signal-history-values { color: var(--ink); font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; white-space: nowrap; }
+    .signal-history-note { margin-top: 7px !important; }
+    .input-scan-results { margin-top: 13px; }
+    .input-scan-table td:first-child { font-weight: 700; }
+    .input-scan-level { width: 110px; height: 7px; background: #30393c; }
+    .input-scan-level::-webkit-progress-bar { background: #30393c; }
+    .input-scan-level::-webkit-progress-value { background: #58996c; }
+    .input-scan-level::-moz-progress-bar { background: #58996c; }
+    .input-scan-presence { font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .input-scan-presence[data-state="present"] { color: #245d38; }
+    .input-scan-presence[data-state="quiet"] { color: var(--muted); }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 22px;
+      z-index: 10;
+      max-width: min(380px, calc(100vw - 32px));
+      padding: 12px 15px;
+      color: white;
+      background: #202729;
+      border-left: 3px solid var(--green);
+      box-shadow: 0 8px 26px #1117;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .footer-note { margin-top: 19px; color: var(--muted); font-size: 10px; }
+
+    @media (max-width: 1040px) {
+      .channel-grid { grid-template-columns: repeat(3, minmax(130px, 1fr)); }
+      .global-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 680px) {
+      .topbar { min-height: 54px; padding: 0 16px; }
+      .brand-context { display: none; }
+      .topbar-tools { gap: 12px; }
+      .theme-mode { display: none; }
+      main { padding: 20px 14px 36px; }
+      .page-heading { align-items: start; flex-direction: column; gap: 10px; }
+      h1 { font-size: 23px; }
+      .global-controls { grid-template-columns: 1fr 1fr; }
+      .control-cell { min-height: 68px; padding: 10px; }
+      .global-controls .control-cell:nth-child(3) { grid-column: 1 / -1; }
+      .snapshot-cell { grid-column: 1 / -1; }
+      .tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
+      .tab { min-width: 0; padding: 10px 6px; font-size: 10px; }
+      .section-head { align-items: start; flex-direction: column; gap: 4px; }
+      .channel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+      .routing-layout, .device-grid { grid-template-columns: 1fr; }
+      .device-grid > * { min-width: 0; }
+      .device-table { table-layout: fixed; }
+      .device-table th { width: 42%; }
+      .device-table td { overflow-wrap: anywhere; }
+      .input-gain-controls { flex-wrap: wrap; }
+      .route-row { grid-template-columns: minmax(92px, .65fr) minmax(145px, 1.35fr); gap: 8px; }
+      .route-name { font-size: 10px; }
+      .route-source { font-size: 10px; }
+      .offline-tag { align-self: start; }
+    }
+    @media (max-width: 380px) {
+      .channel-grid { grid-template-columns: 1fr 1fr; }
+      .connection { font-size: 9px; }
+      .snapshot-actions { flex-wrap: wrap; }
+      .snapshot-actions input { flex-basis: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --ink: #202426;
+      --muted: #687174;
+      --line: #cbd0ce;
+      --paper: #f0f2ef;
+      --panel: #e4e9e6;
+      --dark: #f7f8f6;
+      --dark-2: #e4e9e6;
+      --red: #d9363d;
+      --red-dark: #b92b32;
+      --green: #39865a;
+      --amber: #d7a43c;
+    }
+    :root[data-theme="light"] .topbar { color: var(--ink); background: #f7f8f6; border-bottom-color: var(--red); }
+    :root[data-theme="light"] .brand-context,
+    :root[data-theme="light"] .connection { color: var(--muted); }
+    :root[data-theme="light"] .theme-toggle { color: var(--muted); }
+    :root[data-theme="light"] .theme-toggle[data-theme="dark"] .theme-mode:first-of-type,
+    :root[data-theme="light"] .theme-toggle[data-theme="light"] .theme-mode:last-of-type { color: var(--ink); }
+    :root[data-theme="light"] #theme-toggle { background: #d7ddda; border-color: #9da8a4; }
+    :root[data-theme="light"] #theme-toggle::before { background: #fff; }
+    :root[data-theme="light"] .offline-tag { color: #795515; background: #f5e8cb; border-color: #dfc991; }
+    :root[data-theme="light"] .global-controls { background: var(--line); border-color: var(--line); }
+    :root[data-theme="light"] .control-cell { background: #fafbf8; }
+    :root[data-theme="light"] select,
+    :root[data-theme="light"] input[type="text"] { color: var(--ink); background: #fff; border-color: #b8bfbd; }
+    :root[data-theme="light"] .command-button { color: var(--ink); background: var(--dark-2); border-color: #c2cac6; }
+    :root[data-theme="light"] .command-button.primary { color: #fff; background: var(--red); border-color: var(--red); }
+    :root[data-theme="light"] .command-button:hover { background: #d8dfdb; }
+    :root[data-theme="light"] .command-button.primary:hover { background: var(--red-dark); }
+    :root[data-theme="light"] .tabs { border-bottom-color: #bfc6c3; }
+    :root[data-theme="light"] .tab { color: #687174; }
+    :root[data-theme="light"] .tab[aria-selected="true"],
+    :root[data-theme="light"] .tab:hover { color: var(--ink); }
+    :root[data-theme="light"] .mixer-toolbar { background: #e4e9e6; border-color: #d1d8d4; border-left-color: var(--red); }
+    :root[data-theme="light"] .signal-button { color: var(--ink); background: #f8f9f6; border-color: #b9c0bd; }
+    :root[data-theme="light"] .signal-button[aria-pressed="true"] { color: #215a37; background: #e0f0e5; border-color: #92c5a1; }
+    :root[data-theme="light"] .channel { color: #202426; background: linear-gradient(155deg, #fff, #edf1ee 58%, #e3e9e6); border-color: #c4ceca; border-top-color: #7c8584; }
+    :root[data-theme="light"] .channel[data-active="true"] { border-top-color: var(--red); }
+    :root[data-theme="light"] .channel-kind,
+    :root[data-theme="light"] .meter-value,
+    :root[data-theme="light"] .pan-labels,
+    :root[data-theme="light"] .channel-foot { color: #687174; }
+    :root[data-theme="light"] .fader-value { color: #202426; }
+    :root[data-theme="light"] .pan { accent-color: #67716e; }
+    :root[data-theme="light"] .switch { color: #424a48; background: #e0e5e2; border-color: #aeb8b4; }
+    :root[data-theme="light"] .switch[aria-pressed="true"] { color: #1a1d1e; background: var(--amber); border-color: var(--amber); }
+    :root[data-theme="light"] .switch[data-kind="solo"][aria-pressed="true"] { background: #85c8a0; border-color: #85c8a0; }
+    :root[data-theme="light"] .routing-art { background: #e4e9e6; border-color: #aeb9b5; }
+    :root[data-theme="light"] .routing-art-fallback { color: #444c4e; background: #e4e9e6; border-color: #aeb9b5; }
+    :root[data-theme="light"] .routing-art-fallback strong { color: #202426; }
+    :root[data-theme="light"] .route-note { color: #444c4e; background: #e6e9e5; border-color: #d5dbd8; border-left-color: #7d9b90; }
+    :root[data-theme="light"] .device-table thead th { background: #e4e9e6; }
+    :root[data-theme="light"] .notice { color: #754515; background: #f4e8d4; border-color: #e4d2b1; }
+    :root[data-theme="light"] .input-gain-read { background: #e6e9e5; border-color: #d2d9d5; border-left-color: #789484; }
+    :root[data-theme="light"] .signal-meter::-webkit-progress-bar { background: #d2d8d3; }
+    :root[data-theme="light"] .signal-presence[data-state="present"],
+    :root[data-theme="light"] .input-scan-presence[data-state="present"] { color: #245d38; }
+    :root[data-theme="light"] .signal-history { border-top-color: #cbd0ce; }
+    :root[data-theme="light"] .signal-history-row { background: #f7f8f5; border-color: #d4d9d5; }
+    :root[data-theme="light"] .signal-history-bar,
+    :root[data-theme="light"] .input-scan-level,
+    :root[data-theme="light"] .input-scan-level::-webkit-progress-bar { background: #d9ded9; }
+    :root[data-theme="light"] .toast { color: #fff; background: #202729; }
+  </style>
+  <script>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem("mixcontrol-theme") === "light" ? "light" : "dark";
+    } catch {
+      document.documentElement.dataset.theme = "dark";
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Scarlett MixControl</span>
+      <span class="brand-context">Control surface</span>
+    </div>
+    <div class="topbar-tools">
+      <div class="theme-toggle" id="theme-toggle-label" data-theme="dark" title="Switch between light and dark themes">
+        <span class="theme-mode">Dark</span>
+        <button id="theme-toggle" class="theme-switch" type="button" role="switch" aria-checked="false" aria-label="Use light theme"></button>
+        <span class="theme-mode">Light</span>
+      </div>
+      <div class="connection"><span class="connection-dot" id="connection-dot" data-connected="false" aria-hidden="true"></span><span id="connection-text">Checking local bridge</span></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">Offline playground</p>
+        <h1>MixControl</h1>
+        <p class="page-note">Input 1-2 mode is controllable. Mixer and routing remain simulated.</p>
+      </div>
+      <span class="offline-tag">Input mode live | mixer and routing simulated</span>
+    </div>
+
+    <section class="global-controls" aria-label="Global device controls">
+      <div class="control-cell">
+        <label for="device-select">Simulation profile</label>
+        <select id="device-select">
+          <option>Scarlett 18i20</option>
+          <option>Scarlett 18i8</option>
+          <option>Scarlett 18i6</option>
+          <option>Scarlett 8i6</option>
+          <option>Scarlett 6i6</option>
+        </select>
+      </div>
+      <div class="control-cell">
+        <label for="clock-select">Simulation clock</label>
+        <select id="clock-select">
+          <option>Internal</option>
+          <option>ADAT</option>
+          <option>S/PDIF</option>
+        </select>
+      </div>
+      <div class="control-cell">
+        <label for="rate-select">Simulation sample rate</label>
+        <select id="rate-select">
+          <option>44.1 kHz</option>
+          <option selected>48 kHz</option>
+          <option>88.2 kHz</option>
+          <option>96 kHz</option>
+          <option>176.4 kHz</option>
+          <option>192 kHz</option>
+        </select>
+      </div>
+      <div class="control-cell snapshot-cell">
+        <label for="snapshot-name">Snapshot</label>
+        <div class="snapshot-actions">
+          <input id="snapshot-name" type="text" value="Late night mix" aria-label="Snapshot name">
+          <button class="command-button primary" id="save-snapshot" type="button">Save</button>
+          <button class="command-button" id="load-snapshot" type="button">Load</button>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabs" role="tablist" aria-label="MixControl views">
+      <button class="tab" id="tab-mixer" role="tab" aria-controls="view-mixer" aria-selected="true" type="button">Mixer</button>
+      <button class="tab" id="tab-routing" role="tab" aria-controls="view-routing" aria-selected="false" type="button">Routing</button>
+      <button class="tab" id="tab-device" role="tab" aria-controls="view-device" aria-selected="false" type="button">Device</button>
+    </nav>
+
+    <section class="view active" id="view-mixer" role="tabpanel" aria-labelledby="tab-mixer">
+      <div class="section-head">
+        <h2>Monitor mix</h2>
+        <span class="section-detail">Faders and meters are simulated. No audio is captured or played.</span>
+      </div>
+      <div class="mixer-toolbar">
+        <div>
+          <button class="signal-button" id="signal-toggle" type="button" aria-pressed="false">Start meter demo</button>
+          <span class="signal-status" id="signal-status">Meters idle</span>
+        </div>
+        <span class="section-detail">Drag a fader | pan | toggle M / S</span>
+      </div>
+      <div class="channel-grid" id="channel-grid" aria-label="Mixer channels"></div>
+    </section>
+
+    <section class="view" id="view-routing" role="tabpanel" aria-labelledby="tab-routing">
+      <div class="section-head">
+        <h2>Output routing</h2>
+        <span class="section-detail">The original 18i20 routing artwork is included below; selectors are local mock state.</span>
+      </div>
+      <div class="routing-layout">
+        <div>
+          <img class="routing-art" id="routing-art" src="target/Scarlett%20MixControl.app/Contents/Resources/Bg18i20Routing.png" alt="Scarlett routing surface showing line, ADAT, and S/PDIF output groups">
+          <div class="routing-art-fallback" id="routing-art-fallback" hidden>
+            <strong>Original routing artwork not included</strong>
+            <span>The app bundle is kept local; routing controls below remain simulated.</span>
+          </div>
+          <div class="routing-list" id="routing-list"></div>
+        </div>
+        <aside class="route-note">
+          <strong>Try a reroute.</strong> Change Line Output 1 to Playback 3, then change the sample rate above. These controls update only this page; nothing is sent to an interface.
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="view-device" role="tabpanel" aria-labelledby="tab-device">
+      <div class="section-head">
+        <h2>Device status</h2>
+        <div class="device-status-actions">
+          <span class="live-check-time" id="live-check-time">Read-only status</span>
+          <button class="command-button" id="refresh-device" type="button">Refresh status</button>
+        </div>
+      </div>
+      <div class="device-grid">
+        <div>
+          <table class="device-table">
+            <tbody>
+              <tr><th scope="row">Live connection</th><td id="live-connection">Not checked</td></tr>
+              <tr><th scope="row">USB device</th><td id="live-device">Not checked</td></tr>
+              <tr><th scope="row">Manufacturer</th><td id="live-manufacturer">Not checked</td></tr>
+              <tr><th scope="row">Transport</th><td id="live-transport">Not checked</td></tr>
+              <tr><th scope="row">USB VID / PID</th><td id="live-usb-id">Not checked</td></tr>
+              <tr><th scope="row">Audio channels</th><td id="live-channels">Not checked</td></tr>
+              <tr><th scope="row">macOS default input</th><td id="default-input-device">Not checked</td></tr>
+              <tr><th scope="row">macOS default output</th><td id="default-output-device">Not checked</td></tr>
+              <tr><th scope="row">Nominal sample rate</th><td id="live-sample-rate">Not checked</td></tr>
+              <tr><th scope="row">USB interfaces</th><td id="live-interfaces">Not checked</td></tr>
+              <tr><th scope="row">Simulation profile</th><td id="device-profile-readout">Scarlett 18i20</td></tr>
+              <tr><th scope="row">Simulation clock</th><td id="clock-readout">Internal</td></tr>
+              <tr><th scope="row">Simulation rate</th><td id="rate-readout">48 kHz</td></tr>
+            </tbody>
+          </table>
+          <div class="notice">Default input/output are macOS host routes. Ableton may select its own device; Scarlett monitor mixes and hardware output routing are not read here.</div>
+          <section class="input-gain-read" aria-labelledby="default-input-heading">
+            <h3 id="default-input-heading">macOS default input | system route</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel route-device-select">
+                <label class="field-label" for="default-input-select">Input device</label>
+                <select id="default-input-select" aria-label="macOS default input device">
+                  <option value="">Loading inputs...</option>
+                </select>
+              </div>
+              <button class="command-button primary" id="apply-default-input" type="button">Apply system input</button>
+            </div>
+            <p class="input-gain-result" id="default-input-result" role="status" aria-live="polite">Choosing a device does not change the route until you apply it.</p>
+            <p>Apply changes the macOS system-wide input. Ableton may use its own device selection; this does not change Scarlett input mode or monitor mixes.</p>
+          </section>
+          <section class="input-gain-read" aria-labelledby="default-output-heading">
+            <h3 id="default-output-heading">macOS default output | system route</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel route-device-select">
+                <label class="field-label" for="default-output-select">Output device</label>
+                <select id="default-output-select" aria-label="macOS default output device">
+                  <option value="">Loading outputs...</option>
+                </select>
+              </div>
+              <button class="command-button primary" id="apply-default-output" type="button">Apply system output</button>
+            </div>
+            <p class="input-gain-result" id="default-output-result" role="status" aria-live="polite">Choosing a device does not change the route until you apply it.</p>
+            <p>Apply changes the macOS system-wide output. Ableton may use its own device selection; this does not change Scarlett monitor mixes.</p>
+          </section>
+          <section class="input-gain-read" aria-labelledby="hardware-rate-heading">
+            <h3 id="hardware-rate-heading">Scarlett sample rate | hardware control</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel route-device-select">
+                <label class="field-label" for="hardware-rate-select">Supported rate</label>
+                <select id="hardware-rate-select" aria-label="Supported Scarlett sample rate">
+                  <option value="">Loading rates...</option>
+                </select>
+              </div>
+              <button class="command-button primary" id="apply-hardware-rate" type="button">Apply sample rate</button>
+            </div>
+            <p class="input-gain-result" id="hardware-rate-result" role="status" aria-live="polite">Current rate and supported rates are read from CoreAudio.</p>
+            <p>Applying a rate changes the Scarlett device for all apps and can interrupt active audio streams. Save work and stop audio before applying.</p>
+          </section>
+          <section class="input-gain-read" aria-labelledby="clock-source-heading">
+            <h3 id="clock-source-heading">Scarlett clock source | hardware control</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel route-device-select">
+                <label class="field-label" for="clock-source-select">Clock source</label>
+                <select id="clock-source-select" aria-label="Supported Scarlett clock source">
+                  <option value="">Loading clock sources...</option>
+                </select>
+              </div>
+              <button class="command-button primary" id="apply-clock-source" type="button">Apply clock source</button>
+            </div>
+            <p class="input-gain-result" id="clock-source-result" role="status" aria-live="polite">Current and supported clock sources are read from CoreAudio.</p>
+            <p>Applying a clock source can interrupt active audio. External S/PDIF or ADAT sync requires a valid connected clock source.</p>
+          </section>
+          <section class="input-gain-read" aria-labelledby="input-mode-heading">
+            <h3 id="input-mode-heading">Input 1-2 mode | hardware control</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel">
+                <label class="field-label" for="input-mode-channel">Input</label>
+                <select id="input-mode-channel" aria-label="Input for Line or Inst mode">
+                  <option value="1">Input 1</option>
+                  <option value="2">Input 2</option>
+                </select>
+              </div>
+              <button class="command-button" id="read-input-mode" type="button">Read mode</button>
+              <button class="command-button" id="set-input-line" type="button">Set Line</button>
+              <button class="command-button primary" id="set-input-inst" type="button">Set Inst</button>
+            </div>
+            <p class="input-gain-result" id="input-mode-result" role="status" aria-live="polite">Mode not read. Set buttons change the selected hardware input and verify by reading it back.</p>
+            <p>Only Inputs 1-2 are enabled, matching the original Scarlett 18i8 Line/Inst controls. This does not change gain level or routing.</p>
+          </section>
+          <section class="input-gain-read" aria-labelledby="input-pad-heading">
+            <h3 id="input-pad-heading">Preamp PAD | Inputs 1-4</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel">
+                <label class="field-label" for="input-pad-channel">Input</label>
+                <select id="input-pad-channel" aria-label="Input for PAD control">
+                  <option value="1">Input 1</option>
+                  <option value="2">Input 2</option>
+                  <option value="3">Input 3</option>
+                  <option value="4">Input 4</option>
+                </select>
+              </div>
+              <button class="command-button" id="read-input-pad" type="button">Read PAD</button>
+              <label class="pad-toggle-label"><input id="input-pad-enabled" type="checkbox" disabled> PAD on</label>
+              <button class="command-button primary" id="apply-input-pad" type="button" disabled>Apply PAD</button>
+            </div>
+            <p class="input-gain-result" id="input-pad-result" role="status" aria-live="polite">Read the current state before changing PAD.</p>
+            <p>PAD attenuates the analog preamp signal. Applying it can reduce the input level and affect all apps using that input.</p>
+          </section>
+          <section class="input-gain-read" aria-labelledby="input-gain-heading">
+            <h3 id="input-gain-heading">Input gain | read-only USB query</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel">
+                <label class="field-label" for="input-gain-channel">Input channel</label>
+                <select id="input-gain-channel" aria-label="Input channel for gain query">
+                  <option value="1">Input 1</option>
+                  <option value="2">Input 2</option>
+                  <option value="3">Input 3</option>
+                  <option value="4">Input 4</option>
+                  <option value="5">Input 5</option>
+                  <option value="6">Input 6</option>
+                  <option value="7">Input 7</option>
+                  <option value="8">Input 8</option>
+                </select>
+              </div>
+              <button class="command-button primary" id="read-input-gain" type="button">Read current gain</button>
+            </div>
+            <p id="input-gain-result" class="input-gain-result" role="status" aria-live="polite">Not queried. This button sends one GET_CUR read and does not change the gain.</p>
+            <p>The returned byte is still an undecoded protocol value, not dB. Connect an instrument to the selected input when you are ready to test.</p>
+          </section>
+          <section class="input-gain-read" aria-labelledby="input-meter-heading">
+            <h3 id="input-meter-heading">Instrument signal | 2-second local measurement</h3>
+            <div class="input-gain-controls">
+              <div class="input-gain-channel">
+                <label class="field-label" for="meter-channel">CoreAudio input</label>
+                <select id="meter-channel" aria-label="CoreAudio input channel for signal measurement">
+                  <option value="1">Input 1</option><option value="2">Input 2</option>
+                  <option value="3">Input 3</option><option value="4">Input 4</option>
+                  <option value="5">Input 5</option><option value="6">Input 6</option>
+                  <option value="7">Input 7</option><option value="8">Input 8</option>
+                  <option value="9">Input 9</option><option value="10">Input 10</option>
+                  <option value="11">Input 11</option><option value="12">Input 12</option>
+                  <option value="13">Input 13</option><option value="14">Input 14</option>
+                  <option value="15">Input 15</option><option value="16">Input 16</option>
+                  <option value="17">Input 17</option><option value="18">Input 18</option>
+                </select>
+              </div>
+              <button class="command-button primary" id="measure-input" type="button">Measure signal (2 s)</button>
+            </div>
+            <progress class="signal-meter" id="signal-meter" max="100" value="0" aria-label="Measured input signal"></progress>
+            <div class="signal-presence" id="signal-presence" data-state="unknown" role="status" aria-live="polite">No measurement yet</div>
+            <div class="signal-threshold">
+              <label for="signal-threshold">Presence threshold</label>
+              <input id="signal-threshold" type="range" min="-108" max="-30" step="3" value="-54" aria-label="Signal presence threshold in dBFS">
+              <output id="signal-threshold-value" for="signal-threshold">-54 dBFS</output>
+            </div>
+            <p class="input-gain-result" id="input-meter-result" role="status" aria-live="polite">Not measured. No samples are saved or played back.</p>
+            <p>Click only after connecting your instrument. macOS may ask the launching terminal for microphone access; the capture is measured in memory and discarded.</p>
+            <div class="signal-history">
+              <div class="signal-history-head">
+                <h4>Last 10 measurement windows</h4>
+                <span class="signal-history-count" id="signal-history-count">0 / 10</span>
+              </div>
+              <ol class="signal-history-list" id="signal-history-list" aria-label="Last 10 input signal measurements">
+                <li class="signal-history-empty">No measurements yet.</li>
+              </ol>
+              <p class="signal-history-note">Each row is a separate 2-second window. Green bar = RMS average; red tick = peak. This history stays in this page only. The threshold is provisional and does not prove a cable is connected. CoreAudio input index to front-panel jack mapping is still being verified.</p>
+            </div>
+          </section>
+          <section class="input-gain-read" aria-labelledby="input-scan-heading">
+            <h3 id="input-scan-heading">All-input signal scan | CoreAudio</h3>
+            <button class="command-button primary" id="scan-inputs" type="button">Scan all inputs (2 s)</button>
+            <p class="input-gain-result" id="input-scan-status" role="status" aria-live="polite">No scan yet.</p>
+            <div class="input-scan-results" id="input-scan-results" hidden>
+              <table class="device-table input-scan-table">
+                <thead><tr><th scope="col">Input</th><th scope="col">RMS</th><th scope="col">Peak</th><th scope="col">Level</th><th scope="col">Threshold</th></tr></thead>
+                <tbody id="input-scan-rows"></tbody>
+              </table>
+            </div>
+            <p>The Scarlett's 18 CoreAudio input channels are captured simultaneously for 2 seconds. Values are measured in memory; no audio is saved or played. This is a signal map, not a physical-jack label.</p>
+          </section>
+        </div>
+        <div>
+          <h2>Firmware payloads in the bundle</h2>
+          <ul class="firmware-list">
+            <li><span>sct18i20fw.bin</span><span>18i20</span></li>
+            <li><span>sct18i8fw.bin</span><span>18i8</span></li>
+            <li><span>sct18i6fw.bin</span><span>18i6</span></li>
+            <li><span>sct8i6fw.bin</span><span>8i6</span></li>
+            <li><span>sct6i6fw.bin</span><span>6i6</span></li>
+          </ul>
+          <p class="footer-note">Names observed in the app bundle; listing them does not validate firmware compatibility or contents.</p>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note">Reverse-engineering companion | all changes stay in this browser tab unless you save a snapshot locally.</p>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const themeToggle = document.querySelector("#theme-toggle");
+    const themeToggleLabel = document.querySelector("#theme-toggle-label");
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+    function setTheme(theme, persist) {
+      const selectedTheme = theme === "light" ? "light" : "dark";
+      document.documentElement.dataset.theme = selectedTheme;
+      themeToggleLabel.dataset.theme = selectedTheme;
+      themeToggle.setAttribute("aria-checked", String(selectedTheme === "light"));
+      themeColorMeta.content = selectedTheme === "light" ? "#f0f2ef" : "#101416";
+      if (persist) {
+        try {
+          localStorage.setItem("mixcontrol-theme", selectedTheme);
+        } catch {}
+      }
+    }
+
+    setTheme(document.documentElement.dataset.theme, false);
+    themeToggle.addEventListener("click", () => {
+      setTheme(themeToggle.getAttribute("aria-checked") === "true" ? "dark" : "light", true);
+    });
+
+    const channels = [
+      { name: "Analogue 1", kind: "Hardware input", stereo: false, level: -8, pan: -12 },
+      { name: "Analogue 2", kind: "Hardware input", stereo: false, level: -10, pan: 10 },
+      { name: "Analogue 3/4", kind: "Hardware input", stereo: true, level: -14, pan: 0 },
+      { name: "Playback 1/2", kind: "DAW return", stereo: true, level: -4, pan: 0 },
+      { name: "Playback 3/4", kind: "DAW return", stereo: true, level: -18, pan: 0 },
+      { name: "Monitor", kind: "Main output", stereo: true, level: -6, pan: 0 }
+    ];
+    const routing = [
+      ["Line Output 1", "Line"], ["Line Output 2", "Line"], ["Line Output 3", "Line"],
+      ["Line Output 4", "Line"], ["Line Output 5", "Line"], ["Line Output 6", "Line"],
+      ["Line Output 7", "Line"], ["Line Output 8", "Line"], ["Line Output 9", "Line"],
+      ["Line Output 10", "Line"], ["ADAT Output 1", "ADAT"], ["ADAT Output 2", "ADAT"],
+      ["ADAT Output 3", "ADAT"], ["ADAT Output 4", "ADAT"], ["ADAT Output 5", "ADAT"],
+      ["ADAT Output 6", "ADAT"], ["ADAT Output 7", "ADAT"], ["ADAT Output 8", "ADAT"],
+      ["S/PDIF Output 1", "Digital"], ["S/PDIF Output 2", "Digital"],
+      ["Loop Back 1", "Loopback"], ["Loop Back 2", "Loopback"]
+    ];
+    const routeSources = ["Mix 1", "Mix 2", "Playback 1", "Playback 2", "Playback 3", "Playback 4", "Analogue 1", "Analogue 2", "Mute"];
+    const pageState = { signal: false, timer: null };
+
+    const channelGrid = document.querySelector("#channel-grid");
+    const toast = document.querySelector("#toast");
+    let toastTimer;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2400);
+    }
+
+    function channelMarkup(channel, index) {
+      const meterCount = channel.stereo ? 2 : 1;
+      return `<article class="channel" data-channel="${index}" data-active="false">
+        <div class="channel-name">${channel.name}<div class="channel-kind">${channel.kind}</div></div>
+        <div class="meter-row" aria-label="${channel.stereo ? "Stereo" : "Mono"} simulated level meter">
+          ${Array.from({ length: meterCount }, () => `<div class="meter"><div class="meter-level"></div><div class="meter-scale"></div></div>`).join("")}
+        </div>
+        <div class="meter-value" data-meter-value>-inf dB</div>
+        <div class="fader-wrap"><input class="fader" type="range" min="-60" max="6" value="${channel.level}" aria-label="${channel.name} level"></div>
+        <div class="fader-value" data-fader-value>${channel.level} dB</div>
+        <div class="pan-row"><div class="pan-labels"><span>L</span><span>Pan</span><span>R</span></div>
+          <input class="pan" type="range" min="-50" max="50" value="${channel.pan}" aria-label="${channel.name} pan"></div>
+        <div class="switch-row">
+          <button class="switch" type="button" data-kind="mute" aria-pressed="false" aria-label="Mute ${channel.name}">M</button>
+          <button class="switch" type="button" data-kind="solo" aria-pressed="false" aria-label="Solo ${channel.name}">S</button>
+        </div>
+        <div class="channel-foot">${channel.stereo ? "STEREO LINK" : "MONO"}</div>
+      </article>`;
+    }
+
+    channelGrid.innerHTML = channels.map(channelMarkup).join("");
+
+    document.querySelectorAll(".fader").forEach((fader) => {
+      fader.addEventListener("input", () => {
+        fader.closest(".channel").querySelector("[data-fader-value]").textContent = `${fader.value} dB`;
+      });
+    });
+
+    document.querySelectorAll(".switch").forEach((button) => {
+      button.addEventListener("click", () => {
+        const nextState = button.getAttribute("aria-pressed") !== "true";
+        button.setAttribute("aria-pressed", String(nextState));
+        button.closest(".channel").dataset.active = String(nextState);
+      });
+    });
+
+    function updateMeters() {
+      document.querySelectorAll(".channel").forEach((channel, index) => {
+        const muted = channel.querySelector('[data-kind="mute"]').getAttribute("aria-pressed") === "true";
+        const fader = Number(channel.querySelector(".fader").value);
+        const levels = channel.querySelectorAll(".meter-level");
+        const value = channel.querySelector("[data-meter-value]");
+        if (!pageState.signal || muted) {
+          levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
+          value.textContent = "-inf dB";
+          return;
+        }
+        const base = Math.max(8, Math.min(88, 63 + fader * .75));
+        levels.forEach((meter, meterIndex) => {
+          const variation = Math.random() * 19 + Math.sin(Date.now() / 270 + index * 2 + meterIndex) * 8;
+          meter.style.setProperty("--level", `${Math.max(5, Math.min(92, base - variation))}%`);
+        });
+        value.textContent = `${Math.round(-18 + Math.random() * 7)} dB`;
+      });
+    }
+
+    document.querySelector("#signal-toggle").addEventListener("click", (event) => {
+      pageState.signal = !pageState.signal;
+      event.currentTarget.setAttribute("aria-pressed", String(pageState.signal));
+      event.currentTarget.textContent = pageState.signal ? "Stop meter demo" : "Start meter demo";
+      document.querySelector("#signal-status").textContent = pageState.signal ? "Synthetic signal active" : "Meters idle";
+      document.querySelectorAll(".channel").forEach((channel) => channel.dataset.active = String(pageState.signal));
+      if (pageState.signal) {
+        updateMeters();
+        pageState.timer = setInterval(updateMeters, 280);
+      } else {
+        clearInterval(pageState.timer);
+        updateMeters();
+      }
+    });
+
+    const routeList = document.querySelector("#routing-list");
+    const routingArt = document.querySelector("#routing-art");
+    const routingArtFallback = document.querySelector("#routing-art-fallback");
+    routingArt.addEventListener("error", () => {
+      routingArt.hidden = true;
+      routingArtFallback.hidden = false;
+    }, { once: true });
+    if (routingArt.complete && routingArt.naturalWidth === 0) {
+      routingArt.hidden = true;
+      routingArtFallback.hidden = false;
+    }
+    routeList.innerHTML = routing.map(([name, group], index) => `<label class="route-row">
+      <span><span class="route-name">${name}</span><br><span class="route-group">${group} bus</span></span>
+      <select class="route-source" data-route="${index}" aria-label="Source for ${name}">${routeSources.map((source, sourceIndex) => `<option${sourceIndex === index % 4 ? " selected" : ""}>${source}</option>`).join("")}</select>
+    </label>`).join("");
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+        document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === tab.getAttribute("aria-controls")));
+      });
+    });
+
+    document.querySelector("#device-select").addEventListener("change", (event) => {
+      document.querySelector("#device-profile-readout").textContent = event.target.value;
+      showToast(`Profile changed to ${event.target.value} (simulation)`);
+    });
+    document.querySelector("#clock-select").addEventListener("change", (event) => {
+      document.querySelector("#clock-readout").textContent = event.target.value;
+      showToast(`Clock source set to ${event.target.value} (simulation)`);
+    });
+    document.querySelector("#rate-select").addEventListener("change", (event) => {
+      document.querySelector("#rate-readout").textContent = event.target.value;
+      showToast(`Sample rate set to ${event.target.value} (simulation)`);
+    });
+
+    function readState() {
+      return {
+        device: document.querySelector("#device-select").value,
+        clock: document.querySelector("#clock-select").value,
+        rate: document.querySelector("#rate-select").value,
+        channels: [...document.querySelectorAll(".channel")].map((channel) => ({
+          level: channel.querySelector(".fader").value,
+          pan: channel.querySelector(".pan").value,
+          mute: channel.querySelector('[data-kind="mute"]').getAttribute("aria-pressed"),
+          solo: channel.querySelector('[data-kind="solo"]').getAttribute("aria-pressed")
+        })),
+        routes: [...document.querySelectorAll(".route-source")].map((select) => select.value)
+      };
+    }
+
+    function applyState(state) {
+      if (state.device) document.querySelector("#device-select").value = state.device;
+      if (state.clock) document.querySelector("#clock-select").value = state.clock;
+      if (state.rate) document.querySelector("#rate-select").value = state.rate;
+      document.querySelector("#device-profile-readout").textContent = document.querySelector("#device-select").value;
+      document.querySelector("#clock-readout").textContent = document.querySelector("#clock-select").value;
+      document.querySelector("#rate-readout").textContent = document.querySelector("#rate-select").value;
+      (state.channels || []).forEach((saved, index) => {
+        const channel = document.querySelector(`.channel[data-channel="${index}"]`);
+        if (!channel) return;
+        channel.querySelector(".fader").value = saved.level;
+        channel.querySelector("[data-fader-value]").textContent = `${saved.level} dB`;
+        channel.querySelector(".pan").value = saved.pan;
+        channel.querySelector('[data-kind="mute"]').setAttribute("aria-pressed", saved.mute);
+        channel.querySelector('[data-kind="solo"]').setAttribute("aria-pressed", saved.solo);
+      });
+      (state.routes || []).forEach((source, index) => {
+        const select = document.querySelector(`.route-source[data-route="${index}"]`);
+        if (select) select.value = source;
+      });
+    }
+
+    document.querySelector("#save-snapshot").addEventListener("click", () => {
+      const name = document.querySelector("#snapshot-name").value.trim() || "Untitled snapshot";
+      const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
+      snapshots[name] = readState();
+      localStorage.setItem("mixcontrol-playground-snapshots", JSON.stringify(snapshots));
+      showToast(`Saved "${name}" in this browser`);
+    });
+    document.querySelector("#load-snapshot").addEventListener("click", () => {
+      const name = document.querySelector("#snapshot-name").value.trim();
+      const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
+      if (!snapshots[name]) return showToast(`No local snapshot named "${name}"`);
+      applyState(snapshots[name]);
+      showToast(`Loaded "${name}" from this browser`);
+    });
+
+    async function refreshLiveStatus() {
+      const button = document.querySelector("#refresh-device");
+      const dot = document.querySelector("#connection-dot");
+      const connectionText = document.querySelector("#connection-text");
+      button.disabled = true;
+      button.textContent = "Reading...";
+
+      try {
+        const response = await fetch("/api/device", { cache: "no-store" });
+        const snapshot = await response.json();
+        if (!response.ok) throw new Error(snapshot.error || "The local probe failed.");
+
+        const audioDevice = snapshot.audioDevices.find((device) => /scarlett/i.test(device.name));
+        const usbDevice = snapshot.usbDevices.find((device) => /scarlett/i.test(device.productName))
+          || snapshot.usbDevices.find((device) => /focusrite/i.test(device.manufacturer));
+        const interfaces = [...(snapshot.usbInterfaces || [])].sort((left, right) => left.number - right.number);
+        const audioControl = interfaces.filter((item) => item.kind === "Audio Control").map((item) => item.number);
+        const dfu = interfaces.find((item) => item.kind === "DFU");
+
+        const connected = Boolean(audioDevice || usbDevice);
+        dot.dataset.connected = String(connected);
+        connectionText.textContent = connected
+          ? `${audioDevice?.name || usbDevice.productName} | live read-only`
+          : "Scarlett not detected | simulation only";
+        document.querySelector("#live-connection").textContent = connected ? "Detected (read-only)" : "Not detected";
+        document.querySelector("#live-device").textContent = audioDevice?.name || usbDevice?.productName || "Not detected";
+        document.querySelector("#live-manufacturer").textContent = audioDevice?.manufacturer || usbDevice?.manufacturer || "Unavailable";
+        document.querySelector("#live-transport").textContent = audioDevice?.transport || "Unavailable";
+        document.querySelector("#live-usb-id").textContent = usbDevice?.vendorID != null && usbDevice?.productID != null
+          ? `0x${usbDevice.vendorID.toString(16).padStart(4, "0")} / 0x${usbDevice.productID.toString(16).padStart(4, "0")}`
+          : "Unavailable";
+        document.querySelector("#live-channels").textContent = audioDevice
+          ? `${audioDevice.inputChannels ?? "?"} in / ${audioDevice.outputChannels ?? "?"} out`
+          : "Unavailable";
+        document.querySelector("#default-input-device").textContent = snapshot.defaultInputDeviceName || "Unavailable";
+        document.querySelector("#default-output-device").textContent = snapshot.defaultOutputDeviceName || "Unavailable";
+        const inputSelect = document.querySelector("#default-input-select");
+        const inputDevices = (snapshot.audioDevices || []).filter((device) => (device.inputChannels || 0) > 0);
+        inputSelect.replaceChildren();
+        for (const device of inputDevices) {
+          const option = document.createElement("option");
+          option.value = String(device.deviceID);
+          option.textContent = `${device.name} | ${device.inputChannels} inputs`;
+          inputSelect.append(option);
+        }
+        const currentInput = inputDevices.find((device) => device.name === snapshot.defaultInputDeviceName);
+        if (currentInput) inputSelect.value = String(currentInput.deviceID);
+        inputSelect.disabled = inputDevices.length === 0;
+        document.querySelector("#default-input-result").textContent = currentInput
+          ? `Current system input: ${currentInput.name}. Choose another device, then apply.`
+          : "No available macOS input device was reported.";
+        const outputSelect = document.querySelector("#default-output-select");
+        const outputDevices = (snapshot.audioDevices || []).filter((device) => (device.outputChannels || 0) > 0);
+        outputSelect.replaceChildren();
+        for (const device of outputDevices) {
+          const option = document.createElement("option");
+          option.value = String(device.deviceID);
+          option.textContent = `${device.name} | ${device.outputChannels} outputs`;
+          outputSelect.append(option);
+        }
+        const currentOutput = outputDevices.find((device) => device.name === snapshot.defaultOutputDeviceName);
+        if (currentOutput) outputSelect.value = String(currentOutput.deviceID);
+        outputSelect.disabled = outputDevices.length === 0;
+        document.querySelector("#default-output-result").textContent = currentOutput
+          ? `Current system output: ${currentOutput.name}. Choose another device, then apply.`
+          : "No available macOS output device was reported.";
+        const hardwareRateSelect = document.querySelector("#hardware-rate-select");
+        const supportedRates = (audioDevice?.supportedSampleRateRanges || [])
+          .filter((range) => Math.abs(range.maximumHz - range.minimumHz) < 0.5)
+          .map((range) => Math.round(range.minimumHz));
+        hardwareRateSelect.replaceChildren();
+        for (const rate of [...new Set(supportedRates)].sort((left, right) => left - right)) {
+          const option = document.createElement("option");
+          option.value = String(rate);
+          option.textContent = `${(rate / 1000).toFixed(rate % 1000 === 0 ? 0 : 1)} kHz`;
+          hardwareRateSelect.append(option);
+        }
+        hardwareRateSelect.dataset.deviceId = audioDevice ? String(audioDevice.deviceID) : "";
+        const currentRate = Math.round(audioDevice?.sampleRateHz || 0);
+        if (supportedRates.includes(currentRate)) hardwareRateSelect.value = String(currentRate);
+        hardwareRateSelect.disabled = supportedRates.length === 0 || !audioDevice;
+        document.querySelector("#hardware-rate-result").textContent = audioDevice
+          ? `Current rate: ${(audioDevice.sampleRateHz / 1000).toFixed(1)} kHz. ${supportedRates.length} discrete rates reported.`
+          : "Scarlett sample-rate data is unavailable.";
+        const clockSourceSelect = document.querySelector("#clock-source-select");
+        const clockSources = audioDevice?.supportedClockSources || [];
+        clockSourceSelect.replaceChildren();
+        for (const source of clockSources) {
+          const option = document.createElement("option");
+          option.value = String(source.id);
+          option.textContent = source.name;
+          clockSourceSelect.append(option);
+        }
+        clockSourceSelect.dataset.deviceId = audioDevice ? String(audioDevice.deviceID) : "";
+        const currentClockSource = clockSources.find((source) => source.id === audioDevice?.currentClockSourceID);
+        if (currentClockSource) clockSourceSelect.value = String(currentClockSource.id);
+        clockSourceSelect.disabled = clockSources.length === 0 || !audioDevice;
+        document.querySelector("#clock-source-result").textContent = currentClockSource
+          ? `Current source: ${currentClockSource.name}. ${clockSources.length} sources reported.`
+          : "Scarlett clock-source data is unavailable.";
+        document.querySelector("#live-sample-rate").textContent = audioDevice?.sampleRateHz
+          ? `${(audioDevice.sampleRateHz / 1000).toFixed(1)} kHz`
+          : "Unavailable";
+        document.querySelector("#live-interfaces").textContent = interfaces.length
+          ? `Audio Control ${audioControl.join(", ") || "none"}; DFU ${dfu?.number ?? "none"}`
+          : "Unavailable";
+        document.querySelector("#live-check-time").textContent = `Checked ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        dot.dataset.connected = "false";
+        connectionText.textContent = "Local bridge unavailable | simulation only";
+        document.querySelector("#live-connection").textContent = "Could not check";
+        document.querySelector("#live-device").textContent = error.message;
+        document.querySelector("#live-manufacturer").textContent = "Unavailable";
+        document.querySelector("#live-transport").textContent = "Unavailable";
+        document.querySelector("#live-usb-id").textContent = "Unavailable";
+        document.querySelector("#live-channels").textContent = "Unavailable";
+        document.querySelector("#default-input-device").textContent = "Unavailable";
+        document.querySelector("#default-output-device").textContent = "Unavailable";
+        const inputSelect = document.querySelector("#default-input-select");
+        inputSelect.replaceChildren(new Option("Input devices unavailable", ""));
+        inputSelect.disabled = true;
+        document.querySelector("#default-input-result").textContent = "Could not read available macOS input devices.";
+        const outputSelect = document.querySelector("#default-output-select");
+        outputSelect.replaceChildren(new Option("Output devices unavailable", ""));
+        outputSelect.disabled = true;
+        document.querySelector("#default-output-result").textContent = "Could not read available macOS output devices.";
+        const hardwareRateSelect = document.querySelector("#hardware-rate-select");
+        hardwareRateSelect.replaceChildren(new Option("Rates unavailable", ""));
+        hardwareRateSelect.disabled = true;
+        document.querySelector("#hardware-rate-result").textContent = "Could not read Scarlett sample-rate data.";
+        const clockSourceSelect = document.querySelector("#clock-source-select");
+        clockSourceSelect.replaceChildren(new Option("Clock sources unavailable", ""));
+        clockSourceSelect.disabled = true;
+        document.querySelector("#clock-source-result").textContent = "Could not read Scarlett clock-source data.";
+        document.querySelector("#live-sample-rate").textContent = "Unavailable";
+        document.querySelector("#live-interfaces").textContent = "Unavailable";
+        document.querySelector("#live-check-time").textContent = "Start the local server to read status";
+      } finally {
+        button.disabled = false;
+        button.textContent = "Refresh status";
+      }
+    }
+
+    document.querySelector("#refresh-device").addEventListener("click", refreshLiveStatus);
+    refreshLiveStatus();
+
+    document.querySelector("#apply-default-input").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const select = document.querySelector("#default-input-select");
+      const result = document.querySelector("#default-input-result");
+      const deviceID = Number(select.value);
+      if (!Number.isInteger(deviceID) || deviceID < 1) {
+        result.textContent = "Choose an available input device first.";
+        return;
+      }
+
+      button.disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = "Applying...";
+      result.textContent = "Changing macOS system input and verifying...";
+      try {
+        const response = await fetch("/api/default-input", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceID })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Input change failed.");
+        document.querySelector("#default-input-device").textContent = payload.name;
+        result.textContent = `macOS input set to ${payload.name}; read-back verified. Ableton may use a different device.`;
+      } catch (error) {
+        result.textContent = `Could not change macOS input: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    });
+
+    document.querySelector("#apply-default-output").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const select = document.querySelector("#default-output-select");
+      const result = document.querySelector("#default-output-result");
+      const deviceID = Number(select.value);
+      if (!Number.isInteger(deviceID) || deviceID < 1) {
+        result.textContent = "Choose an available output device first.";
+        return;
+      }
+
+      button.disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = "Applying...";
+      result.textContent = "Changing macOS system output and verifying...";
+      try {
+        const response = await fetch("/api/default-output", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceID })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Output change failed.");
+        document.querySelector("#default-output-device").textContent = payload.name;
+        result.textContent = `macOS output set to ${payload.name}; read-back verified. Ableton may use a different device.`;
+      } catch (error) {
+        result.textContent = `Could not change macOS output: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    });
+
+    document.querySelector("#apply-hardware-rate").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const select = document.querySelector("#hardware-rate-select");
+      const result = document.querySelector("#hardware-rate-result");
+      const deviceID = Number(select.dataset.deviceId);
+      const sampleRateHz = Number(select.value);
+      if (!Number.isInteger(deviceID) || deviceID < 1 || !Number.isFinite(sampleRateHz) || sampleRateHz <= 0) {
+        result.textContent = "Choose an available supported sample rate first.";
+        return;
+      }
+
+      button.disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = "Applying...";
+      result.textContent = "Changing Scarlett sample rate and verifying... Active audio may stop briefly.";
+      try {
+        const response = await fetch("/api/sample-rate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceID, sampleRateHz })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Sample-rate change failed.");
+        document.querySelector("#live-sample-rate").textContent = `${(payload.sampleRateHz / 1000).toFixed(1)} kHz`;
+        result.textContent = `Scarlett set to ${(payload.sampleRateHz / 1000).toFixed(1)} kHz; read-back verified.`;
+      } catch (error) {
+        result.textContent = `Could not change Scarlett sample rate: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    });
+
+    document.querySelector("#apply-clock-source").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const select = document.querySelector("#clock-source-select");
+      const result = document.querySelector("#clock-source-result");
+      const deviceID = Number(select.dataset.deviceId);
+      const sourceID = Number(select.value);
+      if (!Number.isInteger(deviceID) || deviceID < 1 || !Number.isInteger(sourceID) || sourceID < 0) {
+        result.textContent = "Choose an available Scarlett clock source first.";
+        return;
+      }
+
+      button.disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = "Applying...";
+      result.textContent = "Changing Scarlett clock source and verifying... Active audio may stop briefly.";
+      try {
+        const response = await fetch("/api/clock-source", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceID, sourceID })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Clock-source change failed.");
+        result.textContent = `Scarlett clock set to ${payload.name}; read-back verified.`;
+      } catch (error) {
+        result.textContent = `Could not change Scarlett clock source: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    });
+
+    document.querySelector("#read-input-gain").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const channel = document.querySelector("#input-gain-channel").value;
+      const result = document.querySelector("#input-gain-result");
+      button.disabled = true;
+      button.textContent = "Reading...";
+      result.textContent = "Sending one read-only GET_CUR request...";
+      try {
+        const response = await fetch(`/api/input-gain?channel=${encodeURIComponent(channel)}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Gain query failed.");
+        const rawValue = Number(payload.value);
+        result.textContent = `Input ${payload.channel}: raw 0x${rawValue.toString(16).padStart(2, "0")} (${rawValue})`;
+      } catch (error) {
+        result.textContent = `Read failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Read current gain";
+      }
+    });
+
+    const signalHistory = [];
+
+    async function readInputMode() {
+      const channel = document.querySelector("#input-mode-channel").value;
+      const result = document.querySelector("#input-mode-result");
+      result.textContent = `Reading Input ${channel} mode...`;
+      try {
+        const response = await fetch(`/api/input-mode?channel=${encodeURIComponent(channel)}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Mode read failed.");
+        result.textContent = `Input ${payload.channel} is ${payload.mode}.`;
+        return payload.mode;
+      } catch (error) {
+        result.textContent = `Mode read failed: ${error.message}`;
+        throw error;
+      }
+    }
+
+    document.querySelector("#read-input-mode").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        await readInputMode();
+      } catch {}
+      button.disabled = false;
+    });
+
+    async function setInputMode(mode, button) {
+      const channel = Number(document.querySelector("#input-mode-channel").value);
+      const result = document.querySelector("#input-mode-result");
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      document.querySelectorAll("#set-input-line, #set-input-inst, #read-input-mode").forEach((control) => control.disabled = true);
+      button.textContent = "Applying...";
+      result.textContent = `Changing Input ${channel} to ${mode} and verifying...`;
+      try {
+        const response = await fetch("/api/input-mode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel, mode: mode.toLowerCase() })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Mode change failed.");
+        result.textContent = `Input ${payload.channel} set to ${payload.mode}; read-back ${payload.verified ? "verified" : "not verified"}.`;
+      } catch (error) {
+        result.textContent = `Mode change failed: ${error.message}`;
+      } finally {
+        button.textContent = originalLabel;
+        document.querySelectorAll("#set-input-line, #set-input-inst, #read-input-mode").forEach((control) => control.disabled = false);
+      }
+    }
+
+    document.querySelector("#set-input-line").addEventListener("click", (event) => setInputMode("Line", event.currentTarget));
+    document.querySelector("#set-input-inst").addEventListener("click", (event) => setInputMode("Inst", event.currentTarget));
+
+    const inputPadChannel = document.querySelector("#input-pad-channel");
+    const inputPadEnabled = document.querySelector("#input-pad-enabled");
+    const applyInputPadButton = document.querySelector("#apply-input-pad");
+    const inputPadResult = document.querySelector("#input-pad-result");
+
+    inputPadChannel.addEventListener("change", () => {
+      inputPadEnabled.disabled = true;
+      applyInputPadButton.disabled = true;
+      inputPadResult.textContent = "Read the current state before changing PAD.";
+    });
+
+    document.querySelector("#read-input-pad").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const channel = Number(inputPadChannel.value);
+      button.disabled = true;
+      inputPadResult.textContent = `Reading Input ${channel} PAD state...`;
+      try {
+        const response = await fetch(`/api/input-pad?channel=${channel}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "PAD read failed.");
+        inputPadEnabled.checked = Boolean(payload.pad);
+        inputPadEnabled.disabled = false;
+        applyInputPadButton.disabled = false;
+        inputPadResult.textContent = `Input ${payload.channel} PAD is ${payload.pad ? "on" : "off"}.`;
+      } catch (error) {
+        inputPadEnabled.disabled = true;
+        applyInputPadButton.disabled = true;
+        inputPadResult.textContent = `PAD read failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.querySelector("#apply-input-pad").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const channel = Number(inputPadChannel.value);
+      const enabled = inputPadEnabled.checked;
+      button.disabled = true;
+      document.querySelector("#read-input-pad").disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = "Applying...";
+      inputPadResult.textContent = `Setting Input ${channel} PAD ${enabled ? "on" : "off"} and verifying...`;
+      try {
+        const response = await fetch("/api/input-pad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel, enabled })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "PAD change failed.");
+        inputPadEnabled.checked = Boolean(payload.pad);
+        inputPadResult.textContent = `Input ${payload.channel} PAD set ${payload.pad ? "on" : "off"}; read-back verified.`;
+      } catch (error) {
+        inputPadResult.textContent = `PAD change failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+        document.querySelector("#read-input-pad").disabled = false;
+      }
+    });
+
+    const signalThreshold = document.querySelector("#signal-threshold");
+    let inputScanReadings = [];
+
+    function levelToHistoryPercent(dbfs) {
+      return Math.max(0, Math.min(100, ((dbfs + 72) / 72) * 100));
+    }
+
+    function renderInputScan() {
+      if (inputScanReadings.length === 0) return;
+      const threshold = Number(signalThreshold.value);
+      const rows = document.querySelector("#input-scan-rows");
+      const aboveThresholdCount = inputScanReadings.filter((reading) => reading.rmsDbFS >= threshold).length;
+      rows.replaceChildren();
+
+      for (const reading of inputScanReadings) {
+        const row = document.createElement("tr");
+        const channel = document.createElement("th");
+        channel.scope = "row";
+        channel.textContent = `Input ${reading.channel}`;
+
+        const rms = document.createElement("td");
+        rms.textContent = `${reading.rmsDbFS.toFixed(1)} dBFS`;
+        const peak = document.createElement("td");
+        peak.textContent = `${reading.peakDbFS.toFixed(1)} dBFS`;
+
+        const levelCell = document.createElement("td");
+        const level = document.createElement("progress");
+        level.className = "input-scan-level";
+        level.max = 100;
+        level.value = levelToHistoryPercent(reading.rmsDbFS);
+        level.setAttribute("aria-label", `Input ${reading.channel} RMS level`);
+        levelCell.append(level);
+
+        const thresholdCell = document.createElement("td");
+        const thresholdState = document.createElement("span");
+        const aboveThreshold = reading.rmsDbFS >= threshold;
+        thresholdState.className = "input-scan-presence";
+        thresholdState.dataset.state = aboveThreshold ? "present" : "quiet";
+        thresholdState.textContent = aboveThreshold ? "Above" : "Below";
+        thresholdState.title = `RMS ${reading.rmsDbFS.toFixed(1)} dBFS; threshold ${threshold} dBFS`;
+        thresholdCell.append(thresholdState);
+
+        row.append(channel, rms, peak, levelCell, thresholdCell);
+        rows.append(row);
+      }
+
+      const scan = inputScanReadings[0];
+      document.querySelector("#input-scan-status").textContent =
+        `${aboveThresholdCount} of ${inputScanReadings.length} inputs above ${threshold} dBFS; measured over ${scan.durationMilliseconds} ms at ${(scan.sampleRateHz / 1000).toFixed(1)} kHz.`;
+    }
+
+    function renderSignalHistory() {
+      const historyList = document.querySelector("#signal-history-list");
+      const threshold = Number(signalThreshold.value);
+      const presence = document.querySelector("#signal-presence");
+      const thresholdOutput = document.querySelector("#signal-threshold-value");
+      thresholdOutput.value = `${threshold} dBFS`;
+      thresholdOutput.textContent = `${threshold} dBFS`;
+      document.querySelector("#signal-history-count").textContent = `${signalHistory.length} / 10`;
+
+      const latest = signalHistory[0];
+      if (latest) {
+        const aboveThreshold = latest.rmsDbFS >= threshold;
+        presence.dataset.state = aboveThreshold ? "present" : "quiet";
+        presence.textContent = aboveThreshold
+          ? `Signal above provisional threshold (${threshold} dBFS)`
+          : `Below provisional threshold (${threshold} dBFS)`;
+      } else {
+        presence.dataset.state = "unknown";
+        presence.textContent = "No measurement yet";
+      }
+
+      historyList.replaceChildren();
+      if (signalHistory.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "signal-history-empty";
+        empty.textContent = "No measurements yet.";
+        historyList.append(empty);
+        return;
+      }
+
+      for (const reading of signalHistory) {
+        const row = document.createElement("li");
+        row.className = "signal-history-row";
+
+        const time = document.createElement("time");
+        time.className = "signal-history-time";
+        time.dateTime = reading.time.toISOString();
+        time.textContent = reading.time.toLocaleTimeString();
+
+        const bar = document.createElement("div");
+        bar.className = "signal-history-bar";
+        bar.setAttribute("aria-label", `RMS ${reading.rmsDbFS.toFixed(1)} dBFS; peak ${reading.peakDbFS.toFixed(1)} dBFS`);
+
+        const rms = document.createElement("span");
+        rms.className = "signal-history-rms";
+        rms.style.width = `${levelToHistoryPercent(reading.rmsDbFS)}%`;
+
+        const peak = document.createElement("span");
+        peak.className = "signal-history-peak";
+        peak.style.left = `${levelToHistoryPercent(reading.peakDbFS)}%`;
+        bar.append(rms, peak);
+
+        const values = document.createElement("span");
+        values.className = "signal-history-values";
+        values.textContent = `In ${reading.channel} | ${reading.rmsDbFS.toFixed(1)} / ${reading.peakDbFS.toFixed(1)} dBFS`;
+
+        row.append(time, bar, values);
+        historyList.append(row);
+      }
+    }
+
+    function recordSignalMeasurement(payload) {
+      signalHistory.unshift({
+        channel: payload.channel,
+        rmsDbFS: payload.rmsDbFS,
+        peakDbFS: payload.peakDbFS,
+        time: new Date()
+      });
+      if (signalHistory.length > 10) signalHistory.length = 10;
+      renderSignalHistory();
+    }
+
+    signalThreshold.addEventListener("input", () => {
+      renderSignalHistory();
+      renderInputScan();
+    });
+    renderSignalHistory();
+
+    document.querySelector("#measure-input").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const channel = Number(document.querySelector("#meter-channel").value);
+      const result = document.querySelector("#input-meter-result");
+      const meter = document.querySelector("#signal-meter");
+      button.disabled = true;
+      button.textContent = "Listening (2 s)...";
+      result.textContent = "Capturing a short in-memory measurement...";
+      meter.value = 0;
+      try {
+        const response = await fetch("/api/input-meter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Signal measurement failed.");
+        const levelPercent = Math.max(0, Math.min(100, (payload.rmsDbFS + 60) / 60 * 100));
+        meter.value = levelPercent;
+        result.textContent = `Input ${payload.channel}: RMS ${payload.rmsDbFS.toFixed(1)} dBFS | peak ${payload.peakDbFS.toFixed(1)} dBFS`;
+        recordSignalMeasurement(payload);
+      } catch (error) {
+        result.textContent = `Measurement failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Measure signal (2 s)";
+      }
+    });
+
+    document.querySelector("#scan-inputs").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const status = document.querySelector("#input-scan-status");
+      const results = document.querySelector("#input-scan-results");
+      const rows = document.querySelector("#input-scan-rows");
+      button.disabled = true;
+      button.textContent = "Scanning (2 s)...";
+      status.textContent = "Capturing all CoreAudio inputs simultaneously...";
+      results.hidden = true;
+      inputScanReadings = [];
+
+      try {
+        const response = await fetch("/api/input-scan", { method: "POST" });
+        const readings = await response.json();
+        if (!response.ok) throw new Error(readings.error || "Input scan failed.");
+        if (!Array.isArray(readings) || readings.length !== 18) {
+          throw new Error("Expected 18 input-channel readings.");
+        }
+
+        inputScanReadings = readings;
+        results.hidden = false;
+        renderInputScan();
+      } catch (error) {
+        inputScanReadings = [];
+        status.textContent = `Scan failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Scan all inputs (2 s)";
+      }
+    });
+  </script>
+</body>
+</html>
