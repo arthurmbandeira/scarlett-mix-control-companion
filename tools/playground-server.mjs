@@ -296,12 +296,50 @@ const server = createServer(async (request, response) => {
     return streamMeters(response, channels);
   }
 
+  if (pathname === "/api/output-tone") {
+    if (request.method !== "POST") {
+      response.writeHead(405, { Allow: "POST" });
+      return response.end("Scarlett output tone requires an explicit POST action.\n");
+    }
+
+    const chunks = [];
+    let bodySize = 0;
+    for await (const chunk of request) {
+      bodySize += chunk.length;
+      if (bodySize > 1024) {
+        response.writeHead(413);
+        return response.end("Request body is too large.\n");
+      }
+      chunks.push(chunk);
+    }
+
+    let input;
+    try {
+      input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch {
+      return sendJSON(response, 400, { error: "Expected a Scarlett output channel, frequency, and duration." });
+    }
+    const channel = Number(input.channel);
+    const frequencyHz = Number(input.frequencyHz);
+    const durationMilliseconds = Number(input.durationMilliseconds);
+    if (!Number.isInteger(channel) || channel < 1 || channel > 8
+        || !Number.isFinite(frequencyHz) || frequencyHz < 20 || frequencyHz > 20_000
+        || !Number.isInteger(durationMilliseconds) || durationMilliseconds < 100 || durationMilliseconds > 10_000) {
+      return sendJSON(response, 400, { error: "Choose output 1-8, 20-20000 Hz, and a duration from 100-10000 ms." });
+    }
+    return runProbeCommand(
+      response,
+      ["--play-scarlett-output-tone", String(channel), String(frequencyHz), String(durationMilliseconds)],
+      "Could not play the Scarlett output tone."
+    );
+  }
+
   if (pathname === "/api/live-output-meter") {
     if (request.method !== "GET") {
       response.writeHead(405, { Allow: "GET" });
       return response.end("The Scarlett output meter uses GET with a server-sent event stream.\n");
     }
-    return streamMeters(response, [1, 2], "output");
+    return streamMeters(response, [1, 2, 3, 4, 5, 6, 7, 8], "output");
   }
 
   if (pathname === "/api/input-scan") {

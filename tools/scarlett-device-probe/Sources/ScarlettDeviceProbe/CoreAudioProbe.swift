@@ -782,6 +782,120 @@ func streamInputSignals(
   dispatchMain()
 }
 
+func playScarlettOutputTone(
+  channel: Int, frequencyHz: Double = 440, durationMilliseconds: Int = 2000
+) throws {
+  guard (1...8).contains(channel) else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Scarlett output channel must be between 1 and 8")
+  }
+  guard frequencyHz >= 20, frequencyHz <= 20_000 else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Tone frequency must be between 20 and 20000 Hz")
+  }
+  guard durationMilliseconds >= 100, durationMilliseconds <= 10_000 else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Tone duration must be between 100 and 10000 ms")
+  }
+
+  let deviceIDs = try readDeviceIDs()
+  var selectedDevice: AudioObjectID?
+  for deviceID in deviceIDs {
+    if let name = try? readString(deviceID, selector: kAudioObjectPropertyName),
+      name == "Scarlett 18i8 USB"
+    {
+      selectedDevice = deviceID
+      break
+    }
+  }
+  guard let selectedDevice else {
+    throw ProbeError.coreAudio(
+      kAudioHardwareBadDeviceError, "Scarlett 18i8 USB is not an audio device")
+  }
+
+  let channelCount = try readChannelCount(selectedDevice, scope: kAudioObjectPropertyScopeOutput)
+  guard (1...channelCount).contains(channel) else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Output channel must be between 1 and \(channelCount)")
+  }
+
+  var streamAddress = address(kAudioDevicePropertyStreams, scope: kAudioObjectPropertyScopeOutput)
+  var streamsSize: UInt32 = 0
+  try check(
+    AudioObjectGetPropertyDataSize(selectedDevice, &streamAddress, 0, nil, &streamsSize),
+    operation: "Read Scarlett output-stream list size")
+  let streamStride = MemoryLayout<AudioStreamID>.stride
+  guard streamsSize >= UInt32(streamStride), Int(streamsSize) % streamStride == 0 else {
+    throw ProbeError.unexpectedDataSize(streamsSize, streamStride)
+  }
+  var streams = [AudioStreamID](repeating: 0, count: Int(streamsSize) / streamStride)
+  try streams.withUnsafeMutableBytes { buffer in
+    guard let baseAddress = buffer.baseAddress else { return }
+    try check(
+      AudioObjectGetPropertyData(selectedDevice, &streamAddress, 0, nil, &streamsSize, baseAddress),
+      operation: "Read Scarlett output-stream list")
+  }
+  guard let outputStream = streams.first else {
+    throw ProbeError.coreAudio(kAudioHardwareBadDeviceError, "Scarlett has no output stream")
+  }
+
+  var formatAddress = address(kAudioStreamPropertyVirtualFormat)
+  var streamFormat = AudioStreamBasicDescription()
+  var formatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+  try check(
+    AudioObjectGetPropertyData(outputStream, &formatAddress, 0, nil, &formatSize, &streamFormat),
+    operation: "Read Scarlett output sample format")
+  guard streamFormat.mFormatID == kAudioFormatLinearPCM,
+    streamFormat.mFormatFlags & kAudioFormatFlagIsFloat != 0,
+    streamFormat.mBitsPerChannel == 32,
+    streamFormat.mChannelsPerFrame >= UInt32(channelCount)
+  else {
+    throw ProbeError.coreAudio(
+      kAudioHardwareUnspecifiedError, "Unsupported Scarlett output format for tone")
+  }
+
+  var phase = 0.0
+  var ioProcID: AudioDeviceIOProcID?
+  let createStatus = AudioDeviceCreateIOProcIDWithBlock(
+    &ioProcID, selectedDevice, DispatchQueue.global(qos: .userInitiated)
+  ) { _, _, _, outputData, _ in
+    let buffers = UnsafeMutableAudioBufferListPointer(outputData)
+    var channelOffset = 0
+    for buffer in buffers {
+      let bufferChannels = Int(buffer.mNumberChannels)
+      if let data = buffer.mData, bufferChannels > 0 {
+        let samples = data.assumingMemoryBound(to: Float32.self)
+        let sampleCount = Int(buffer.mDataByteSize) / MemoryLayout<Float32>.stride
+        let frames = sampleCount / bufferChannels
+        for bufferChannel in 0..<bufferChannels {
+          let channelIndex = channelOffset + bufferChannel
+          for frame in 0..<frames {
+            let sample: Float32 =
+              channelIndex == channel - 1
+              ? Float32(sin(phase) * 0.12)
+              : 0
+            samples[frame * bufferChannels + bufferChannel] = sample
+            if channelIndex == channel - 1 {
+              phase += 2 * Double.pi * frequencyHz / streamFormat.mSampleRate
+              if phase > 2 * Double.pi { phase -= 2 * Double.pi }
+            }
+          }
+        }
+      }
+      channelOffset += bufferChannels
+    }
+  }
+  try check(createStatus, operation: "Create Scarlett output tone callback")
+  guard let ioProcID else {
+    throw ProbeError.coreAudio(kAudioHardwareBadDeviceError, "Create Scarlett output tone callback")
+  }
+  defer { _ = AudioDeviceDestroyIOProcID(selectedDevice, ioProcID) }
+
+  try check(AudioDeviceStart(selectedDevice, ioProcID), operation: "Start Scarlett output tone")
+  Thread.sleep(forTimeInterval: Double(durationMilliseconds) / 1000)
+  try check(AudioDeviceStop(selectedDevice, ioProcID), operation: "Stop Scarlett output tone")
+}
+
 @available(macOS 14.2, *)
 func streamScarlettOutputSignals(channels: [Int], intervalMilliseconds: Int = 50) throws -> Never {
   let deviceIDs = try readDeviceIDs()
@@ -804,9 +918,10 @@ func streamScarlettOutputSignals(channels: [Int], intervalMilliseconds: Int = 50
   }
   guard !channels.isEmpty,
     Set(channels).count == channels.count,
-    channels.allSatisfy({ (1...2).contains($0) })
+    channels.allSatisfy({ (1...8).contains($0) })
   else {
-    throw ProbeError.coreAudio(kIOReturnBadArgument, "Scarlett main output channels must be 1 or 2")
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Scarlett output channels must be between 1 and 8")
   }
 
   let tapDescription = CATapDescription(

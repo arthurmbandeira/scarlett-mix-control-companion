@@ -35,11 +35,12 @@ This repository intentionally excludes the original `target/Scarlett MixControl.
 - **Line/Inst:** Read and set Inputs 1-2, with read-back. Reads retry up to two times if consecutive replies differ, to avoid showing a transient first response.
 - **Preamp PAD:** Read and set analog Inputs 1-4. The UI requires a read before enabling Apply; a write is reported successful only after read-back.
 - **Input gain query:** Read-only raw protocol byte for Inputs 1-8. It is not decoded as dB and is not a gain control.
-- **Input/output metering:** Manual two-second RMS/peak capture for one input, simultaneous scan of all 18 inputs, continuous read-only CoreAudio meters for Inputs 1-18, and a system-audio tap for Scarlett Main Output 1/2. The output tap requires macOS 14.2 or newer and may require system-audio recording permission. On desktop, the mixer starts with Analogue 1, Analogue 2, Analogue 3/4, Playback 1/2, Playback 3/4, and Monitor together; Inputs 5-18 follow. Inputs 1-4 map to the first three input strips, with Analogue 3/4 shown as stereo. Inputs 5-18 are labeled by CoreAudio channel number because their physical ADAT/S/PDIF mapping has not been validated. Playback return meters remain simulated. Audio is processed in memory and discarded, never saved or played.
+- **Input/output metering:** Manual two-second RMS/peak capture for one input, simultaneous scan of all 18 inputs, continuous read-only CoreAudio meters for Inputs 1-18, and a system-audio tap for Scarlett Outputs 1-8. The output tap requires macOS 14.2 or newer and may require system-audio recording permission. A bounded 440 Hz tone can be played through CoreAudio Output 1-8 to identify physical sockets, then stops automatically. On desktop, Analogue 1, Analogue 2, Analogue 3/4, and output pairs 1/2, 3/4, 5/6, and 7/8 appear together. Playback return meters remain simulated. Audio is processed in memory and never recorded or played back by the companion.
 - **Signal threshold:** Classifies scan/measurement levels as above or below a user-set dBFS threshold. This does not prove a cable or instrument is connected or map CoreAudio channels to front-panel jacks.
-- **macOS default input/output:** Device-tab selectors use current CoreAudio device IDs. Apply changes the system-wide default and verifies by reading it back. Ableton can use a separate device selection.
+- **macOS default input/output:** Device-tab selectors use current CoreAudio device IDs. Apply changes the system-wide default and verifies by reading it back. Ableton can use a separate device selection. The Routing tab can also apply Scarlett as the macOS default output and restore the previous output with read-back verification.
 - **Scarlett sample rate:** Reads the current rate and CoreAudio-supported ranges. Apply offers the discrete rates reported for the 18i8, checks the property is settable, then verifies read-back. A change affects all apps and can interrupt active audio.
 - **Scarlett clock source:** Reads current and supported clock-source names from CoreAudio. Apply accepts only a source ID reported by the device, checks settable state, and verifies read-back. External S/PDIF/ADAT sync requires a valid connected source.
+- **Snapshots:** Save live browser and verified hardware state locally, Load UI without changing hardware, and Apply hardware explicitly. Hardware snapshots capture macOS default input/output, Scarlett sample rate and clock source, Input 1-2 Line/Inst, and PAD 1-4. Apply compares current state and skips unchanged settings; every changed setting is read back after posting.
 - **Theme:** Dark is the default. Light/dark preference persists in browser local storage.
 
 All hardware-changing actions require an explicit Apply/Set action. No setting is changed when the page loads.
@@ -60,9 +61,10 @@ The HTTP server listens only on `127.0.0.1`. State-changing actions require expl
 | `POST /api/input-scan` | Measure all 18 CoreAudio input channels simultaneously for two seconds. |
 | `GET /api/live-input-meter?channel=1` | Server-sent RMS/peak frames for Input 1; closing the connection stops the capture process. |
 | `GET /api/live-input-meters?channels=1,2,...,18` | One server-sent stream for the selected input channels; closing it stops the capture process. |
-| `GET /api/live-output-meter` | Server-sent RMS/peak frames for Scarlett Main Output 1/2 using a private, unmuted CoreAudio tap; requires macOS 14.2 or newer. Closing it destroys the tap and aggregate device. |
+| `GET /api/live-output-meter` | Server-sent RMS/peak frames for Scarlett CoreAudio Outputs 1-8 using a private, unmuted CoreAudio tap; requires macOS 14.2 or newer. Closing it destroys the tap and aggregate device. |
 | `POST /api/default-input` | Set macOS default input; JSON body: `{"deviceID":145}`. Use an ID from `/api/device`. |
 | `POST /api/default-output` | Set macOS default output; JSON body: `{"deviceID":88}`. Use an ID from `/api/device`. |
+| `POST /api/output-tone` | Play a bounded 440 Hz or custom tone on one Scarlett CoreAudio output; JSON body: `{"channel":1,"frequencyHz":440,"durationMilliseconds":2000}`. |
 | `POST /api/sample-rate` | Set Scarlett sample rate; JSON body: `{"deviceID":145,"sampleRateHz":48000}`. |
 | `POST /api/clock-source` | Set Scarlett clock source; JSON body: `{"deviceID":145,"sourceID":690487296}`. Use IDs from `/api/device`. |
 
@@ -83,7 +85,8 @@ swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --me
 swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --measure-all-inputs
 swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --stream-input-meter 1
 swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --stream-input-meters 1,2,3,4
-swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --stream-scarlett-output-meters 1,2
+swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --stream-scarlett-output-meters 1,2,3,4,5,6,7,8
+swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --play-scarlett-output-tone 1 440 2000
 swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --set-default-input "$COREAUDIO_DEVICE_ID"
 swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --set-default-output "$COREAUDIO_DEVICE_ID"
 swift run --package-path tools/scarlett-device-probe ScarlettDeviceProbe -- --set-scarlett-sample-rate "$SCARLETT_DEVICE_ID" "$SUPPORTED_RATE_HZ"
@@ -98,9 +101,18 @@ Set the device/source ID variables from the current `--json` snapshot. Device ID
 
 ## Simulated and unavailable
 
-- Mixer faders, pan, M/S, meter demo, simulation profile/clock/rate, and output-routing selectors change only browser state. The pan readout mirrors the slider value; Analogue 1 and 2 default to centered (`0`). Input meters 1-18 and Scarlett Main Output 1/2 use live CoreAudio taps; Playback return meters remain simulated.
+- Mixer faders, pan, M/S, meter demo, simulation profile/clock/rate, and browser-only output selectors change only browser state. The pan readout mirrors the slider value; Analogue 1 and 2 default to centered (`0`). Input meters 1-18 and Scarlett output meters 1-8 use live CoreAudio taps. macOS default output routing is live and reversible through Apply/Restore; Scarlett internal monitor-matrix routing remains unavailable. Playback return meters remain simulated, and the host-output tap may not include internal direct monitoring.
 - Scarlett monitor-mix mute/solo and physical output crosspoint routing are **not implemented**. Current routing cannot yet be read reliably, and exploratory gain writes did not produce reliable read-back. No monitor-mixer write is exposed.
 - No Ableton track mute/solo or DAW control is implemented.
+
+## Next tasks
+
+1. **Confirm Scarlett physical output mapping:** use the controlled 440 Hz test to record each CoreAudio output 1-8 against the front-panel/headphone/S/PDIF destinations. The signal test is implemented; physical confirmation requires manual listening/measurement.
+2. **Capture per-channel output history:** retain a short rolling RMS/peak history for Inputs 1-18 and Outputs 1-8 in the browser, with the existing threshold controls.
+4. **Reverse engineer monitor-matrix writes:** investigate a reliable read-back and write protocol for monitor mixes, mute/solo, and direct-monitor routing before exposing it in the UI.
+5. **Add Scarlett mix presets:** save and restore Line/Inst, PAD, route, sample-rate, and clock settings only after each state can be read back and verified.
+
+The highest-priority remaining work is physical output mapping and monitor-matrix protocol reverse engineering. Adding hardware matrix controls without reliable read-back should remain blocked.
 
 ## Code layout
 

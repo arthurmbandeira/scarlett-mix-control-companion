@@ -190,7 +190,7 @@ do {
   if let optionIndex = CommandLine.arguments.firstIndex(of: "--stream-scarlett-output-meters") {
     guard CommandLine.arguments.indices.contains(optionIndex + 1) else {
       throw ProbeError.coreAudio(
-        kIOReturnBadArgument, "Usage: --stream-scarlett-output-meters <comma-separated 1-2>")
+        kIOReturnBadArgument, "Usage: --stream-scarlett-output-meters <comma-separated 1-8>")
     }
     let channelArguments = CommandLine.arguments[optionIndex + 1].split(separator: ",")
     let channels = channelArguments.compactMap { Int($0) }
@@ -204,6 +204,32 @@ do {
       throw ProbeError.coreAudio(
         kAudioHardwareUnspecifiedError, "Live output metering requires macOS 14.2 or newer")
     }
+  }
+
+  if let optionIndex = CommandLine.arguments.firstIndex(of: "--play-scarlett-output-tone") {
+    guard CommandLine.arguments.indices.contains(optionIndex + 3),
+      let channel = Int(CommandLine.arguments[optionIndex + 1]),
+      let frequencyHz = Double(CommandLine.arguments[optionIndex + 2]),
+      let durationMilliseconds = Int(CommandLine.arguments[optionIndex + 3])
+    else {
+      throw ProbeError.coreAudio(
+        kIOReturnBadArgument,
+        "Usage: --play-scarlett-output-tone <1-8> <Hz> <duration ms>")
+    }
+    try playScarlettOutputTone(
+      channel: channel,
+      frequencyHz: frequencyHz,
+      durationMilliseconds: durationMilliseconds)
+    let output: [String: Any] = [
+      "channel": channel,
+      "frequencyHz": frequencyHz,
+      "durationMilliseconds": durationMilliseconds,
+      "completed": true,
+    ]
+    let data = try JSONSerialization.data(
+      withJSONObject: output, options: [.prettyPrinted, .sortedKeys])
+    print(String(decoding: data, as: UTF8.self))
+    exit(EXIT_SUCCESS)
   }
 
   if let optionIndex = CommandLine.arguments.firstIndex(of: "--read-input-gain") {

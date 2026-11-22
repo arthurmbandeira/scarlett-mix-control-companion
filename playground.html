@@ -179,8 +179,10 @@
       border: 1px solid #424c4f;
       border-radius: 2px;
     }
-    .snapshot-actions { display: flex; gap: 7px; }
-    .snapshot-actions input { min-width: 0; flex: 1; }
+    .snapshot-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .snapshot-actions input { min-width: 150px; flex: 1; }
+    .snapshot-actions .command-button { flex: 0 0 auto; }
+    .snapshot-status { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.35; }
     .command-button {
       min-height: 32px;
       padding: 6px 11px;
@@ -619,7 +621,7 @@
       <div>
         <p class="eyebrow">Scarlett 18i8 | 1st generation</p>
         <h1>MixControl</h1>
-        <p class="page-note">Built for the Scarlett 18i8 1st gen. Inputs 1-18 and Main Output 1/2 can be metered live; faders and routing remain simulated.</p>
+        <p class="page-note">Built for the Scarlett 18i8 1st gen. Inputs 1-18 and Outputs 1-8 can be metered live; faders and routing remain simulated.</p>
       </div>
       <span class="offline-tag">Inputs 1-18 live meters | routing simulated</span>
     </div>
@@ -658,9 +660,11 @@
         <label for="snapshot-name">Snapshot</label>
         <div class="snapshot-actions">
           <input id="snapshot-name" type="text" value="Late night mix" aria-label="Snapshot name">
-          <button class="command-button primary" id="save-snapshot" type="button">Save</button>
-          <button class="command-button" id="load-snapshot" type="button">Load</button>
+          <button class="command-button primary" id="save-snapshot" type="button">Save live</button>
+          <button class="command-button" id="load-snapshot" type="button">Load UI</button>
+          <button class="command-button" id="apply-snapshot" type="button">Apply hardware</button>
         </div>
+        <p class="snapshot-status" id="snapshot-status" role="status" aria-live="polite">Snapshots store UI state and can capture verified Scarlett/macOS hardware state.</p>
       </div>
     </section>
 
@@ -673,7 +677,7 @@
     <section class="view active" id="view-mixer" role="tabpanel" aria-labelledby="tab-mixer">
       <div class="section-head">
         <h2>Monitor mix</h2>
-        <span class="section-detail">Inputs 1-18 and Scarlett Main Output 1/2 support live meters. Playback returns remain simulated.</span>
+        <span class="section-detail">Inputs 1-18 and Scarlett Outputs 1-8 support live meters. The output tap reads host audio; internal direct monitoring may not appear.</span>
       </div>
       <div class="mixer-toolbar">
         <div>
@@ -684,7 +688,7 @@
         </div>
         <span class="section-detail">Drag a fader | pan | toggle M / S</span>
       </div>
-      <div class="channel-grid" id="channel-grid" aria-label="18 live CoreAudio input meters and simulated playback and monitor strips"></div>
+      <div class="channel-grid" id="channel-grid" aria-label="Live CoreAudio input and output meters with simulated playback returns"></div>
     </section>
 
     <section class="view" id="view-routing" role="tabpanel" aria-labelledby="tab-routing">
@@ -692,6 +696,35 @@
         <h2>Output routing</h2>
         <span class="section-detail">18i8 1st-gen output reference; selectors remain simulated.</span>
       </div>
+      <section class="input-gain-read" aria-labelledby="output-tone-heading">
+        <h3 id="output-tone-heading">CoreAudio output mapping test | controlled tone</h3>
+        <div class="input-gain-controls">
+          <div class="input-gain-channel">
+            <label class="field-label" for="tone-output-channel">Output channel</label>
+            <select id="tone-output-channel">
+              <option value="1">Output 1</option>
+              <option value="2">Output 2</option>
+              <option value="3">Output 3</option>
+              <option value="4">Output 4</option>
+              <option value="5">Output 5</option>
+              <option value="6">Output 6</option>
+              <option value="7">Output 7</option>
+              <option value="8">Output 8</option>
+            </select>
+          </div>
+          <button class="command-button primary" id="play-output-tone" type="button">Play 440 Hz tone</button>
+        </div>
+        <p class="input-gain-result" id="output-tone-status" role="status" aria-live="polite">Choose one CoreAudio output channel, then listen or observe the corresponding physical socket.</p>
+      </section>
+      <section class="input-gain-read" aria-labelledby="routing-output-heading">
+        <h3 id="routing-output-heading">macOS output routing | effective Scarlett route</h3>
+        <p>Apply sends all macOS host audio to the Scarlett as the system output. It verifies read-back and can restore the previous default device.</p>
+        <div class="input-gain-controls">
+          <button class="command-button primary" id="apply-scarlett-output" type="button">Apply Scarlett output</button>
+          <button class="command-button" id="restore-output-route" type="button" disabled>Restore previous output</button>
+        </div>
+        <p class="input-gain-result" id="routing-output-status" role="status" aria-live="polite">Read the current macOS default output before applying a route.</p>
+      </section>
       <div class="routing-layout">
         <div>
           <img class="routing-art" id="routing-art" src="target/Scarlett%20MixControl.app/Contents/Resources/Bg18i8Routing.png" alt="Scarlett 18i8 first-generation routing reference for outputs 3 through 6 and S/PDIF">
@@ -945,9 +978,12 @@
       { name: "Analogue 1", kind: "Hardware input", inputChannels: [1], stereo: false, level: -8, pan: 0 },
       { name: "Analogue 2", kind: "Hardware input", inputChannels: [2], stereo: false, level: -10, pan: 0 },
       { name: "Analogue 3/4", kind: "Hardware input", inputChannels: [3, 4], stereo: true, level: -14, pan: 0 },
+      { name: "Monitor 1/2", kind: "Main output", outputChannels: [1, 2], stereo: true, level: -6, pan: 0 },
+      { name: "Outputs 3/4", kind: "Line output", outputChannels: [3, 4], stereo: true, level: -6, pan: 0 },
+      { name: "Outputs 5/6", kind: "CoreAudio output", outputChannels: [5, 6], stereo: true, level: -6, pan: 0 },
+      { name: "Outputs 7/8", kind: "CoreAudio output", outputChannels: [7, 8], stereo: true, level: -6, pan: 0 },
       { name: "Playback 1/2", kind: "DAW return", stereo: true, level: -4, pan: 0 },
       { name: "Playback 3/4", kind: "DAW return", stereo: true, level: -18, pan: 0 },
-      { name: "Monitor", kind: "Main output", outputChannels: [1, 2], stereo: true, level: -6, pan: 0 },
       ...Array.from({ length: 14 }, (_, index) => ({
         name: `Input ${index + 5}`,
         kind: "CoreAudio input",
@@ -965,7 +1001,6 @@
     const routeSources = ["Mix 1", "Mix 2", "Playback 1", "Playback 2", "Playback 3", "Playback 4", "Analogue 1", "Analogue 2", "Mute"];
     const pageState = { signal: false, timer: null, liveInput: null, liveOutput: null, outputPeak: null };
     const liveInputChannels = channels.flatMap((channel) => channel.inputChannels || []);
-    const liveOutputChannels = channels.flatMap((channel) => channel.outputChannels || []);
 
     const channelGrid = document.querySelector("#channel-grid");
     const toast = document.querySelector("#toast");
@@ -1114,7 +1149,7 @@
       const peak = Math.max(...activeFrames.map((frame) => frame.peakDbFS));
       const outputStatus = pageState.outputPeak === null
         ? ""
-        : ` | Outputs 1/2 peak ${pageState.outputPeak.toFixed(1)} dBFS`;
+        : ` | Outputs 1-8 peak ${pageState.outputPeak.toFixed(1)} dBFS`;
       document.querySelector("#signal-status").textContent = `Inputs 1-18 live | peak ${peak.toFixed(1)} dBFS${outputStatus}`;
     }
 
@@ -1133,7 +1168,7 @@
         strip.row.setAttribute("aria-label", `Live-capable input meters: ${inputNames.join(", ")}`);
       }
       document.querySelector("#signal-status").textContent = statusMessage
-        || (pageState.liveOutput ? "Scarlett Output 1/2 live" : pageState.signal ? "Synthetic signal active" : "Meters idle");
+        || (pageState.liveOutput ? "Scarlett Outputs 1-8 live" : pageState.signal ? "Synthetic signal active" : "Meters idle");
     }
 
     liveInputButton.addEventListener("click", () => {
@@ -1176,12 +1211,18 @@
       });
     });
 
-    const liveOutputStripIndex = channels.findIndex((channel) => channel.outputChannels);
-    const liveOutputStrip = document.querySelector(`.channel[data-channel="${liveOutputStripIndex}"]`);
-    const liveOutputLevels = [...liveOutputStrip.querySelectorAll(".meter-level")];
-    const liveOutputValue = liveOutputStrip.querySelector("[data-meter-value]");
-    const liveOutputKind = liveOutputStrip.querySelector(".channel-kind");
-    const liveOutputRow = liveOutputStrip.querySelector(".meter-row");
+    const liveOutputStrips = channels.flatMap((channel, index) => {
+      if (!channel.outputChannels) return [];
+      const element = document.querySelector(`.channel[data-channel="${index}"]`);
+      return [{
+        channels: channel.outputChannels,
+        element,
+        levels: [...element.querySelectorAll(".meter-level")],
+        value: element.querySelector("[data-meter-value]"),
+        kind: element.querySelector(".channel-kind"),
+        row: element.querySelector(".meter-row")
+      }];
+    });
 
     function stopLiveOutputMeter(statusMessage = null) {
       if (pageState.liveOutput) pageState.liveOutput.close();
@@ -1190,11 +1231,13 @@
       liveOutputButton.setAttribute("aria-pressed", "false");
       liveOutputButton.textContent = "Start output meter";
       demoButton.disabled = Boolean(pageState.liveInput);
-      liveOutputKind.textContent = "Main output | live capable";
-      liveOutputValue.textContent = "-inf dBFS";
-      liveOutputValue.title = "Scarlett Main Output 1/2 meter is stopped";
-      liveOutputLevels.forEach((meter) => meter.style.setProperty("--level", "3%"));
-      liveOutputRow.setAttribute("aria-label", "Live-capable Scarlett Main Output 1/2 stereo meter");
+      for (const strip of liveOutputStrips) {
+        strip.kind.textContent = `${strip.channels[0] === 1 ? "Monitor" : "Output"} ${strip.channels.join("/")} | live capable`;
+        strip.value.textContent = "-inf dBFS";
+        strip.value.title = `Scarlett Outputs ${strip.channels.join("/")} meter is stopped`;
+        strip.levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
+        strip.row.setAttribute("aria-label", `Live-capable Scarlett Outputs ${strip.channels.join("/")} stereo meter`);
+      }
       document.querySelector("#signal-status").textContent = statusMessage
         || (pageState.liveInput ? "Scarlett Inputs 1-18 live" : pageState.signal ? "Synthetic signal active" : "Meters idle");
     }
@@ -1215,40 +1258,52 @@
       liveOutputButton.setAttribute("aria-pressed", "true");
       liveOutputButton.textContent = "Stop output meter";
       demoButton.disabled = true;
-      liveOutputKind.textContent = "Connecting | Scarlett Out 1/2";
-      document.querySelector("#signal-status").textContent = "Connecting to Scarlett Main Output 1/2...";
+      liveOutputStrips.forEach((strip) => {
+        strip.kind.textContent = `Connecting | Outputs ${strip.channels.join("/")}`;
+      });
+      document.querySelector("#signal-status").textContent = "Connecting to Scarlett Outputs 1-8...";
       const source = new EventSource("/api/live-output-meter");
       pageState.liveOutput = source;
       source.onopen = () => {
-        document.querySelector("#signal-status").textContent = "Scarlett Main Output 1/2 live | CoreAudio tap";
+        document.querySelector("#signal-status").textContent = "Output tap connected | waiting for signal";
       };
       source.onmessage = (event) => {
         const frames = JSON.parse(event.data).filter((frame) => frame.frames > 0);
         if (frames.length === 0) return;
-        for (const frame of frames) {
-          const meterIndex = liveOutputChannels.indexOf(frame.channel);
-          if (meterIndex < 0) continue;
-          const level = Math.max(3, levelToHistoryPercent(frame.rmsDbFS));
-          liveOutputLevels[meterIndex].style.setProperty("--level", `${level}%`);
+        for (const strip of liveOutputStrips) {
+          const stripFrames = frames.filter((frame) => strip.channels.includes(frame.channel));
+          if (stripFrames.length === 0) continue;
+          for (const frame of stripFrames) {
+            const meterIndex = strip.channels.indexOf(frame.channel);
+            const level = Math.max(3, levelToHistoryPercent(frame.rmsDbFS));
+            strip.levels[meterIndex].style.setProperty("--level", `${level}%`);
+          }
+          const stripHasSignal = stripFrames.some((frame) => frame.peakDbFS > -239.9);
+          strip.kind.textContent = stripHasSignal
+            ? `CoreAudio | live Output ${strip.channels.join("/")}`
+            : `CoreAudio | no signal Output ${strip.channels.join("/")}`;
+          strip.value.textContent = `${stripFrames.map((frame) => frame.rmsDbFS.toFixed(0)).join(" / ")} dBFS`;
+          strip.value.title = stripFrames
+            .map((frame) => `Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS | peak ${frame.peakDbFS.toFixed(1)} dBFS`)
+            .join("; ");
+          strip.row.setAttribute(
+            "aria-label",
+            stripFrames.map((frame) => `Live Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS; peak ${frame.peakDbFS.toFixed(1)} dBFS`).join(". ")
+          );
         }
-        liveOutputKind.textContent = "CoreAudio | live Output 1/2";
-        liveOutputValue.textContent = `${frames.map((frame) => frame.rmsDbFS.toFixed(0)).join(" / ")} dBFS`;
-        liveOutputValue.title = frames
-          .map((frame) => `Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS | peak ${frame.peakDbFS.toFixed(1)} dBFS`)
-          .join("; ");
-        liveOutputRow.setAttribute(
-          "aria-label",
-          frames.map((frame) => `Live Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS; peak ${frame.peakDbFS.toFixed(1)} dBFS`).join(". ")
-        );
         const peak = Math.max(...frames.map((frame) => frame.peakDbFS));
+        const hasSignal = frames.some((frame) => frame.peakDbFS > -239.9);
         pageState.outputPeak = peak;
+        const outputStatus = hasSignal
+          ? `Outputs 1-8 signal detected | peak ${peak.toFixed(1)} dBFS`
+          : "Output tap connected | no signal on Outputs 1-8";
         document.querySelector("#signal-status").textContent = pageState.liveInput
-          ? `Inputs 1-18 and Outputs 1/2 live | output peak ${peak.toFixed(1)} dBFS`
-          : `Scarlett Outputs 1/2 live | peak ${peak.toFixed(1)} dBFS`;
+          ? `Inputs 1-18 live | ${outputStatus}`
+          : outputStatus;
       };
       source.onerror = () => {
         if (pageState.liveOutput === source) {
-          document.querySelector("#signal-status").textContent = "Output meter reconnecting or unavailable (requires macOS 14.2+)";
+          document.querySelector("#signal-status").textContent = "Output meter unavailable; check macOS 14.2+ and System Audio Recording permission";
         }
       };
       source.addEventListener("probe-error", (event) => {
@@ -1272,6 +1327,88 @@
       routingArt.hidden = true;
       routingArtFallback.hidden = false;
     }
+    let previousMacOSOutputDevice = null;
+
+    document.querySelector("#apply-scarlett-output").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const status = document.querySelector("#routing-output-status");
+      const restoreButton = document.querySelector("#restore-output-route");
+      button.disabled = true;
+      status.textContent = "Reading the current macOS output route...";
+      try {
+        const snapshotResponse = await fetch("/api/device", { cache: "no-store" });
+        const snapshot = await snapshotResponse.json();
+        if (!snapshotResponse.ok) throw new Error(snapshot.error || "Could not read CoreAudio devices.");
+        const scarlett = snapshot.audioDevices.find((device) => device.name === "Scarlett 18i8 USB" && (device.outputChannels || 0) > 0);
+        if (!scarlett) throw new Error("Scarlett 18i8 USB is not available as an output device.");
+        const current = snapshot.audioDevices.find((device) => device.name === snapshot.defaultOutputDeviceName);
+        if (current) previousMacOSOutputDevice = { deviceID: current.deviceID, name: current.name };
+
+        status.textContent = "Applying Scarlett as the macOS default output...";
+        const applyResponse = await fetch("/api/default-output", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceID: scarlett.deviceID })
+        });
+        const result = await applyResponse.json();
+        if (!applyResponse.ok) throw new Error(result.error || "Could not apply the Scarlett output route.");
+        status.textContent = `Scarlett is now the macOS default output; verified as ${result.name}.`;
+        restoreButton.disabled = !previousMacOSOutputDevice;
+      } catch (error) {
+        status.textContent = `MacOS output routing failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.querySelector("#restore-output-route").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const status = document.querySelector("#routing-output-status");
+      if (!previousMacOSOutputDevice) {
+        status.textContent = "No previous macOS output route is available to restore.";
+        return;
+      }
+      button.disabled = true;
+      status.textContent = `Restoring ${previousMacOSOutputDevice.name}...`;
+      try {
+        const response = await fetch("/api/default-output", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceID: previousMacOSOutputDevice.deviceID })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Could not restore the previous output route.");
+        status.textContent = `Previous output restored; verified as ${result.name}.`;
+        previousMacOSOutputDevice = null;
+      } catch (error) {
+        status.textContent = `Output restoration failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.querySelector("#play-output-tone").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const channel = Number(document.querySelector("#tone-output-channel").value);
+      const status = document.querySelector("#output-tone-status");
+      button.disabled = true;
+      status.textContent = `Playing 440 Hz on CoreAudio Output ${channel} for 2 seconds...`;
+      try {
+        const response = await fetch("/api/output-tone", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel, frequencyHz: 440, durationMilliseconds: 2000 })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Tone playback failed.");
+        status.textContent = `Tone completed on CoreAudio Output ${payload.channel}. Record which physical socket or monitor pair produced the signal.`;
+      } catch (error) {
+        status.textContent = `Tone playback failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
     routeList.innerHTML = routing.map(([name, group], index) => `<label class="route-row">
       <span><span class="route-name">${name}</span><br><span class="route-group">${group} bus</span></span>
       <select class="route-source" data-route="${index}" aria-label="Source for ${name}">${routeSources.map((source, sourceIndex) => `<option${sourceIndex === index % 4 ? " selected" : ""}>${source}</option>`).join("")}</select>
@@ -1296,6 +1433,46 @@
       document.querySelector("#rate-readout").textContent = event.target.value;
       showToast(`Sample rate set to ${event.target.value} (simulation)`);
     });
+
+    async function readHardwareSnapshot() {
+      const snapshotStatus = document.querySelector("#snapshot-status");
+      snapshotStatus.textContent = "Reading verified hardware state for snapshot...";
+      const deviceResponse = await fetch("/api/device", { cache: "no-store" });
+      const devicePayload = await deviceResponse.json();
+      if (!deviceResponse.ok) throw new Error(devicePayload.error || "Could not read device snapshot.");
+
+      const hardware = {
+        defaultInputDeviceName: devicePayload.defaultInputDeviceName,
+        defaultOutputDeviceName: devicePayload.defaultOutputDeviceName,
+        inputModes: {},
+        pads: {},
+        sampleRateHz: null,
+        clockSourceID: null,
+        scarlettDeviceID: null
+      };
+
+      const scarlett = (devicePayload.audioDevices || []).find((device) => device.name === "Scarlett 18i8 USB");
+      if (scarlett) {
+        hardware.scarlettDeviceID = scarlett.deviceID;
+        hardware.sampleRateHz = scarlett.sampleRateHz;
+        hardware.clockSourceID = scarlett.currentClockSourceID;
+      }
+
+      for (const channel of [1, 2]) {
+        const response = await fetch(`/api/input-mode?channel=${channel}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `Could not read Input ${channel} mode.`);
+        hardware.inputModes[channel] = payload.mode.toLowerCase();
+      }
+      for (const channel of [1, 2, 3, 4]) {
+        const response = await fetch(`/api/input-pad?channel=${channel}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `Could not read Input ${channel} PAD.`);
+        hardware.pads[channel] = Boolean(payload.pad);
+      }
+      snapshotStatus.textContent = "Verified hardware state captured.";
+      return hardware;
+    }
 
     function readState() {
       return {
@@ -1337,19 +1514,117 @@
       });
     }
 
-    document.querySelector("#save-snapshot").addEventListener("click", () => {
+    document.querySelector("#save-snapshot").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
       const name = document.querySelector("#snapshot-name").value.trim() || "Untitled snapshot";
-      const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
-      snapshots[name] = readState();
-      localStorage.setItem("mixcontrol-playground-snapshots", JSON.stringify(snapshots));
-      showToast(`Saved "${name}" in this browser`);
+      button.disabled = true;
+      try {
+        const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
+        snapshots[name] = {
+          ...readState(),
+          hardware: await readHardwareSnapshot()
+        };
+        localStorage.setItem("mixcontrol-playground-snapshots", JSON.stringify(snapshots));
+        showToast(`Saved "${name}" with verified hardware state`);
+      } catch (error) {
+        document.querySelector("#snapshot-status").textContent = `Snapshot save failed: ${error.message}`;
+        showToast("Hardware snapshot was not saved");
+      } finally {
+        button.disabled = false;
+      }
     });
     document.querySelector("#load-snapshot").addEventListener("click", () => {
       const name = document.querySelector("#snapshot-name").value.trim();
       const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
       if (!snapshots[name]) return showToast(`No local snapshot named "${name}"`);
       applyState(snapshots[name]);
+      document.querySelector("#snapshot-status").textContent = `Loaded "${name}" into the browser UI; hardware unchanged.`;
       showToast(`Loaded "${name}" from this browser`);
+    });
+
+    document.querySelector("#apply-snapshot").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const name = document.querySelector("#snapshot-name").value.trim();
+      const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
+      const snapshot = snapshots[name];
+      const status = document.querySelector("#snapshot-status");
+      if (!snapshot) return showToast(`No local snapshot named "${name}"`);
+      if (!snapshot.hardware) {
+        status.textContent = "This snapshot has no verified hardware state. Save live again.";
+        return;
+      }
+
+      applyState(snapshot);
+      button.disabled = true;
+      try {
+        const deviceResponse = await fetch("/api/device", { cache: "no-store" });
+        const devicePayload = await deviceResponse.json();
+        if (!deviceResponse.ok) throw new Error(devicePayload.error || "Could not refresh devices.");
+        const scarlett = (devicePayload.audioDevices || []).find((device) => device.name === "Scarlett 18i8 USB");
+
+        const defaultInput = (devicePayload.audioDevices || []).find((device) => device.name === snapshot.hardware.defaultInputDeviceName && (device.inputChannels || 0) > 0);
+        if (defaultInput && devicePayload.defaultInputDeviceName !== snapshot.hardware.defaultInputDeviceName) {
+          status.textContent = `Applying snapshot macOS input: ${defaultInput.name}...`;
+          const response = await fetch("/api/default-input", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceID: defaultInput.deviceID }) });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Could not restore macOS input.");
+        }
+
+        const defaultOutput = (devicePayload.audioDevices || []).find((device) => device.name === snapshot.hardware.defaultOutputDeviceName && (device.outputChannels || 0) > 0);
+        if (defaultOutput && devicePayload.defaultOutputDeviceName !== snapshot.hardware.defaultOutputDeviceName) {
+          status.textContent = `Applying snapshot macOS output: ${defaultOutput.name}...`;
+          const response = await fetch("/api/default-output", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceID: defaultOutput.deviceID }) });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Could not restore macOS output.");
+        }
+
+        if (scarlett && snapshot.hardware.sampleRateHz && Math.round(scarlett.sampleRateHz || 0) !== snapshot.hardware.sampleRateHz) {
+          status.textContent = `Applying snapshot sample rate: ${(snapshot.hardware.sampleRateHz / 1000).toFixed(1)} kHz...`;
+          const response = await fetch("/api/sample-rate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceID: scarlett.deviceID, sampleRateHz: snapshot.hardware.sampleRateHz }) });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Could not restore sample rate.");
+        }
+
+        if (scarlett && Number.isInteger(snapshot.hardware.clockSourceID) && scarlett.currentClockSourceID !== snapshot.hardware.clockSourceID) {
+          status.textContent = "Applying snapshot clock source...";
+          const response = await fetch("/api/clock-source", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceID: scarlett.deviceID, sourceID: snapshot.hardware.clockSourceID }) });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Could not restore clock source.");
+        }
+
+        for (const channel of [1, 2]) {
+          if (!snapshot.hardware.inputModes[channel]) continue;
+          const readResponse = await fetch(`/api/input-mode?channel=${channel}`, { cache: "no-store" });
+          const readPayload = await readResponse.json();
+          if (!readResponse.ok) throw new Error(readPayload.error || `Could not read Input ${channel} mode.`);
+          if (readPayload.mode.toLowerCase() === snapshot.hardware.inputModes[channel]) continue;
+          status.textContent = `Applying snapshot Input ${channel} mode...`;
+          const response = await fetch("/api/input-mode", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel, mode: snapshot.hardware.inputModes[channel] }) });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || `Could not restore Input ${channel} mode.`);
+        }
+
+        for (const channel of [1, 2, 3, 4]) {
+          if (typeof snapshot.hardware.pads[channel] !== "boolean") continue;
+          const readResponse = await fetch(`/api/input-pad?channel=${channel}`, { cache: "no-store" });
+          const readPayload = await readResponse.json();
+          if (!readResponse.ok) throw new Error(readPayload.error || `Could not read Input ${channel} PAD.`);
+          if (Boolean(readPayload.pad) === snapshot.hardware.pads[channel]) continue;
+          status.textContent = `Applying snapshot Input ${channel} PAD...`;
+          const response = await fetch("/api/input-pad", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel, enabled: snapshot.hardware.pads[channel] }) });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || `Could not restore Input ${channel} PAD.`);
+        }
+
+        status.textContent = `Snapshot "${name}" applied; verified hardware state was restored.`;
+        await refreshLiveStatus();
+        showToast(`Applied "${name}" hardware snapshot`);
+      } catch (error) {
+        status.textContent = `Snapshot hardware apply stopped: ${error.message}`;
+        showToast("Snapshot apply failed; no further settings were changed");
+      } finally {
+        button.disabled = false;
+      }
     });
 
     async function refreshLiveStatus() {
