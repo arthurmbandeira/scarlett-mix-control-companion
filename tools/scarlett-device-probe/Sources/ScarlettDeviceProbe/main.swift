@@ -208,20 +208,25 @@ do {
 
   if let optionIndex = CommandLine.arguments.firstIndex(of: "--play-scarlett-output-tone") {
     guard CommandLine.arguments.indices.contains(optionIndex + 3),
-      let channel = Int(CommandLine.arguments[optionIndex + 1]),
       let frequencyHz = Double(CommandLine.arguments[optionIndex + 2]),
       let durationMilliseconds = Int(CommandLine.arguments[optionIndex + 3])
     else {
       throw ProbeError.coreAudio(
         kIOReturnBadArgument,
-        "Usage: --play-scarlett-output-tone <1-8> <Hz> <duration ms>")
+        "Usage: --play-scarlett-output-tone <1,2> <Hz> <duration ms>")
+    }
+    let channelArguments = CommandLine.arguments[optionIndex + 1].split(separator: ",")
+    let channels = channelArguments.compactMap { Int($0) }
+    guard !channelArguments.isEmpty, channels.count == channelArguments.count else {
+      throw ProbeError.coreAudio(
+        kIOReturnBadArgument, "Output channels must be comma-separated integers")
     }
     try playScarlettOutputTone(
-      channel: channel,
+      channels: channels,
       frequencyHz: frequencyHz,
       durationMilliseconds: durationMilliseconds)
     let output: [String: Any] = [
-      "channel": channel,
+      "channels": channels,
       "frequencyHz": frequencyHz,
       "durationMilliseconds": durationMilliseconds,
       "completed": true,

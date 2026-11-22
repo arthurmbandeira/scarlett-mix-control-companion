@@ -702,14 +702,19 @@
           <div class="input-gain-channel">
             <label class="field-label" for="tone-output-channel">Output channel</label>
             <select id="tone-output-channel">
-              <option value="1">Output 1</option>
-              <option value="2">Output 2</option>
-              <option value="3">Output 3</option>
-              <option value="4">Output 4</option>
-              <option value="5">Output 5</option>
-              <option value="6">Output 6</option>
-              <option value="7">Output 7</option>
-              <option value="8">Output 8</option>
+              <option value="1,2">Stereo Outputs 1/2</option>
+              <option value="3,4">Stereo Outputs 3/4</option>
+              <option value="5,6">Stereo Outputs 5/6</option>
+              <option value="7,8">Stereo Outputs 7/8</option>
+              <option value="1,2,3,4,5,6,7,8">All Outputs 1-8</option>
+              <option value="1">Output 1 only</option>
+              <option value="2">Output 2 only</option>
+              <option value="3">Output 3 only</option>
+              <option value="4">Output 4 only</option>
+              <option value="5">Output 5 only</option>
+              <option value="6">Output 6 only</option>
+              <option value="7">Output 7 only</option>
+              <option value="8">Output 8 only</option>
             </select>
           </div>
           <button class="command-button primary" id="play-output-tone" type="button">Play 440 Hz tone</button>
@@ -1389,19 +1394,19 @@
 
     document.querySelector("#play-output-tone").addEventListener("click", async (event) => {
       const button = event.currentTarget;
-      const channel = Number(document.querySelector("#tone-output-channel").value);
+      const channels = document.querySelector("#tone-output-channel").value.split(",").map(Number);
       const status = document.querySelector("#output-tone-status");
       button.disabled = true;
-      status.textContent = `Playing 440 Hz on CoreAudio Output ${channel} for 2 seconds...`;
+      status.textContent = `Playing 440 Hz mono tone on CoreAudio Outputs ${channels.join("/")} for 2 seconds...`;
       try {
         const response = await fetch("/api/output-tone", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ channel, frequencyHz: 440, durationMilliseconds: 2000 })
+          body: JSON.stringify({ channels, frequencyHz: 440, durationMilliseconds: 2000 })
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || "Tone playback failed.");
-        status.textContent = `Tone completed on CoreAudio Output ${payload.channel}. Record which physical socket or monitor pair produced the signal.`;
+        status.textContent = `Tone completed on CoreAudio Outputs ${payload.channels.join("/")}. Record which physical socket or monitor pair produced the signal.`;
       } catch (error) {
         status.textContent = `Tone playback failed: ${error.message}`;
       } finally {

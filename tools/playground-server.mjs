@@ -319,17 +319,21 @@ const server = createServer(async (request, response) => {
     } catch {
       return sendJSON(response, 400, { error: "Expected a Scarlett output channel, frequency, and duration." });
     }
-    const channel = Number(input.channel);
+    const rawChannels = Array.isArray(input.channels)
+      ? input.channels
+      : input.channel != null ? [input.channel] : [];
+    const channels = rawChannels.map(Number);
     const frequencyHz = Number(input.frequencyHz);
     const durationMilliseconds = Number(input.durationMilliseconds);
-    if (!Number.isInteger(channel) || channel < 1 || channel > 8
+    if (channels.length === 0 || channels.some((channel) => !Number.isInteger(channel) || channel < 1 || channel > 8)
+        || new Set(channels).size !== channels.length
         || !Number.isFinite(frequencyHz) || frequencyHz < 20 || frequencyHz > 20_000
         || !Number.isInteger(durationMilliseconds) || durationMilliseconds < 100 || durationMilliseconds > 10_000) {
-      return sendJSON(response, 400, { error: "Choose output 1-8, 20-20000 Hz, and a duration from 100-10000 ms." });
+      return sendJSON(response, 400, { error: "Choose unique outputs 1-8, 20-20000 Hz, and a duration from 100-10000 ms." });
     }
     return runProbeCommand(
       response,
-      ["--play-scarlett-output-tone", String(channel), String(frequencyHz), String(durationMilliseconds)],
+      ["--play-scarlett-output-tone", channels.join(","), String(frequencyHz), String(durationMilliseconds)],
       "Could not play the Scarlett output tone."
     );
   }

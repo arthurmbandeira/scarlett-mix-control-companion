@@ -783,11 +783,14 @@ func streamInputSignals(
 }
 
 func playScarlettOutputTone(
-  channel: Int, frequencyHz: Double = 440, durationMilliseconds: Int = 2000
+  channels: [Int], frequencyHz: Double = 440, durationMilliseconds: Int = 2000
 ) throws {
-  guard (1...8).contains(channel) else {
+  guard !channels.isEmpty,
+    Set(channels).count == channels.count,
+    channels.allSatisfy({ (1...8).contains($0) })
+  else {
     throw ProbeError.coreAudio(
-      kIOReturnBadArgument, "Scarlett output channel must be between 1 and 8")
+      kIOReturnBadArgument, "Scarlett output channels must be unique values between 1 and 8")
   }
   guard frequencyHz >= 20, frequencyHz <= 20_000 else {
     throw ProbeError.coreAudio(
@@ -814,9 +817,9 @@ func playScarlettOutputTone(
   }
 
   let channelCount = try readChannelCount(selectedDevice, scope: kAudioObjectPropertyScopeOutput)
-  guard (1...channelCount).contains(channel) else {
+  guard channels.allSatisfy({ (1...channelCount).contains($0) }) else {
     throw ProbeError.coreAudio(
-      kIOReturnBadArgument, "Output channel must be between 1 and \(channelCount)")
+      kIOReturnBadArgument, "Output channels must be between 1 and \(channelCount)")
   }
 
   var streamAddress = address(kAudioDevicePropertyStreams, scope: kAudioObjectPropertyScopeOutput)
@@ -854,6 +857,7 @@ func playScarlettOutputTone(
       kAudioHardwareUnspecifiedError, "Unsupported Scarlett output format for tone")
   }
 
+  let selectedChannels = Set(channels.map { $0 - 1 })
   var phase = 0.0
   var ioProcID: AudioDeviceIOProcID?
   let createStatus = AudioDeviceCreateIOProcIDWithBlock(
@@ -867,19 +871,15 @@ func playScarlettOutputTone(
         let samples = data.assumingMemoryBound(to: Float32.self)
         let sampleCount = Int(buffer.mDataByteSize) / MemoryLayout<Float32>.stride
         let frames = sampleCount / bufferChannels
-        for bufferChannel in 0..<bufferChannels {
-          let channelIndex = channelOffset + bufferChannel
-          for frame in 0..<frames {
-            let sample: Float32 =
-              channelIndex == channel - 1
-              ? Float32(sin(phase) * 0.12)
-              : 0
-            samples[frame * bufferChannels + bufferChannel] = sample
-            if channelIndex == channel - 1 {
-              phase += 2 * Double.pi * frequencyHz / streamFormat.mSampleRate
-              if phase > 2 * Double.pi { phase -= 2 * Double.pi }
-            }
+        for frame in 0..<frames {
+          let tone = Float32(sin(phase) * 0.12)
+          for bufferChannel in 0..<bufferChannels {
+            let channelIndex = channelOffset + bufferChannel
+            samples[frame * bufferChannels + bufferChannel] =
+              selectedChannels.contains(channelIndex) ? tone : 0
           }
+          phase += 2 * Double.pi * frequencyHz / streamFormat.mSampleRate
+          if phase > 2 * Double.pi { phase -= 2 * Double.pi }
         }
       }
       channelOffset += bufferChannels
