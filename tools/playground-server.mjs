@@ -312,6 +312,11 @@ const server = createServer(async (request, response) => {
   }
 
   const experimentalRoutingActions = {
+    "/api/experimental-di-preset": {
+      field: "preset",
+      values: ["direct-di"],
+      command: "--set-di-preset"
+    },
     "/api/experimental-monitor12-source": {
       field: "source",
       values: ["daw12"],
@@ -319,7 +324,7 @@ const server = createServer(async (request, response) => {
     },
     "/api/experimental-headphone01": {
       field: "preset",
-      values: ["clear", "daw-tracking", "mixing", "mix1-left"],
+      values: ["clear", "daw-tracking", "mixing", "mix1-left", "input1-direct"],
       command: "--set-headphone01-preset"
     },
     "/api/experimental-mixer18-source": {

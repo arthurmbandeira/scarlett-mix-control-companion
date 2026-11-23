@@ -296,6 +296,7 @@ enum Headphone01Preset: String {
   case dawTracking = "daw-tracking"
   case mixing
   case mix1Left = "mix1-left"
+  case input1Direct = "input1-direct"
 
   var sources: [UInt16] {
     switch self {
@@ -303,9 +304,12 @@ enum Headphone01Preset: String {
     case .dawTracking: return [0, 1]
     case .mixing: return [2, 3]
     case .mix1Left: return [26, 1]
+    case .input1Direct: return [8, 8]
     }
   }
 }
+
+private let monitorDAW12Sources: [UInt16] = [0, 1]
 
 func writeRoutingValue(entity: UInt8, selector: UInt8, channel: Int, value: UInt16) throws {
   _ = try sendScarlettControlRequest(
@@ -322,7 +326,7 @@ func setHeadphone01Preset(
   _ preset: Headphone01Preset,
   write: (UInt8, UInt8, Int, UInt16) throws -> Void = writeRoutingValue
 ) throws {
-  try setOutputPair(firstChannel: 2, sources: preset.sources, write: write)
+  try setOutputRoutes(firstChannel: 2, sources: preset.sources, write: write)
 }
 
 func setExperimentalMonitor12Source(
@@ -332,10 +336,18 @@ func setExperimentalMonitor12Source(
   guard source == "daw12" else {
     throw ProbeError.coreAudio(kIOReturnBadArgument, "Monitor 1/2 source must be daw12")
   }
-  try setOutputPair(firstChannel: 0, sources: [0, 1], write: write)
+  try setOutputRoutes(firstChannel: 0, sources: monitorDAW12Sources, write: write)
 }
 
-private func setOutputPair(
+func setDirectDIPreset(
+  write: (UInt8, UInt8, Int, UInt16) throws -> Void = writeRoutingValue
+) throws {
+  try setOutputRoutes(
+    firstChannel: 0, sources: monitorDAW12Sources + Headphone01Preset.input1Direct.sources,
+    write: write)
+}
+
+private func setOutputRoutes(
   firstChannel: Int,
   sources: [UInt16],
   write: (UInt8, UInt8, Int, UInt16) throws -> Void

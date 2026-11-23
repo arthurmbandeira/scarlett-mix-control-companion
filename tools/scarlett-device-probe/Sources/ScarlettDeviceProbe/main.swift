@@ -80,6 +80,20 @@ func printTextReport(_ snapshot: DeviceSnapshot) {
 }
 
 do {
+  if let optionIndex = CommandLine.arguments.firstIndex(of: "--set-di-preset") {
+    guard CommandLine.arguments.indices.contains(optionIndex + 1),
+      CommandLine.arguments[optionIndex + 1] == "direct-di"
+    else {
+      throw ProbeError.coreAudio(kIOReturnBadArgument, "Usage: --set-di-preset <direct-di>")
+    }
+    try setDirectDIPreset()
+    let data = try JSONSerialization.data(
+      withJSONObject: ["preset": "direct-di", "sent": true, "verified": false],
+      options: [.prettyPrinted, .sortedKeys])
+    print(String(decoding: data, as: UTF8.self))
+    exit(EXIT_SUCCESS)
+  }
+
   if let optionIndex = CommandLine.arguments.firstIndex(of: "--set-monitor12-source") {
     guard CommandLine.arguments.indices.contains(optionIndex + 1) else {
       throw ProbeError.coreAudio(kIOReturnBadArgument, "Usage: --set-monitor12-source <daw12>")
@@ -98,7 +112,7 @@ do {
       let preset = Headphone01Preset(rawValue: CommandLine.arguments[optionIndex + 1])
     else {
       throw ProbeError.coreAudio(
-        kIOReturnBadArgument, "Usage: --set-headphone01-preset <clear|daw-tracking|mixing|mix1-left>")
+        kIOReturnBadArgument, "Usage: --set-headphone01-preset <clear|daw-tracking|mixing|mix1-left|input1-direct>")
     }
     try setHeadphone01Preset(preset)
     let data = try JSONSerialization.data(

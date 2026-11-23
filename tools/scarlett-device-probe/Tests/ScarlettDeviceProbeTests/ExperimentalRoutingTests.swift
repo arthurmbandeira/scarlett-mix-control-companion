@@ -2,6 +2,36 @@ import XCTest
 @testable import ScarlettDeviceProbe
 
 final class ExperimentalRoutingTests: XCTestCase {
+  func testDirectDIPresetWritesOnlyIntendedRoutes() throws {
+    var channels: [Int] = []
+    var sources: [UInt16] = []
+    try setDirectDIPreset { entity, selector, channel, value in
+      XCTAssertEqual(entity, 0x33)
+      XCTAssertEqual(selector, 0)
+      channels.append(channel)
+      sources.append(value)
+    }
+    XCTAssertEqual(channels, [0, 1, 2, 3])
+    XCTAssertEqual(sources, [0, 1, 8, 8])
+  }
+
+  func testDirectDIPresetReportsPartialWritesAndStops() {
+    enum TestError: Error { case disconnected }
+    for failedChannel in [0, 1, 2, 3] {
+      var channels: [Int] = []
+      XCTAssertThrowsError(try setDirectDIPreset { _, _, channel, _ in
+        channels.append(channel)
+        if channel == failedChannel { throw TestError.disconnected }
+      }) { error in
+        guard case ProbeError.routingWriteFailed(let completed, _) = error else {
+          return XCTFail("Expected partial routing error, got \(error)")
+        }
+        XCTAssertEqual(completed, failedChannel)
+      }
+      XCTAssertEqual(channels, Array(0...failedChannel))
+    }
+  }
+
   func testMonitorSourceWritesBothChannelsInOrder() throws {
     var channels: [Int] = []
     var sources: [UInt16] = []
@@ -44,6 +74,7 @@ final class ExperimentalRoutingTests: XCTestCase {
       (.dawTracking, [0, 1]),
       (.mixing, [2, 3]),
       (.mix1Left, [26, 1]),
+      (.input1Direct, [8, 8]),
     ]
     for (preset, expected) in cases {
       var channels: [Int] = []

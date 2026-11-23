@@ -108,6 +108,30 @@ Outros canais também podem contribuir ao Mix 1.
 
 ## Routing
 
+### Preset para DI
+
+Com o volume dos monitores e fones baixo, pare o software monitor e qualquer
+monitoramento da Input 1 pela DAW para evitar duplicação. Em **Direct DI
+preset**, pressione **Send direct DI preset**. O comando configura DAW 1/2
+nos Monitor Outputs 1/2 e Input 1 diretamente nos dois lados do HP 01. Ajuste
+os volumes físicos gradualmente; a entrada direta não usa o ganho do software
+monitor.
+
+O preset não altera a saída padrão do macOS nem inicia ou interrompe o software
+monitor. Para ouvir o computador nos monitores, a Scarlett deve estar
+selecionada como saída e o áudio deve ser enviado a DAW 1/2. Os caminhos
+foram testados em conjunto em 44,1 kHz, mas o Monitor Output 2 não foi
+testado separadamente.
+
+> **Cuidado:** quatro comandos alteram as fontes existentes. Uma falha pode
+> deixar uma configuração parcial, e o estado não pode ser lido ou restaurado
+> automaticamente. A mensagem confirma apenas o envio; confira o áudio. O
+> preset não é aplicado ao iniciar nem incluído em snapshots. Em um teste após
+> desligar e religar a Scarlett, a DI continuou no HP 01, mas o computador passou
+> para o HP 01 em vez do MO 1; reaplicar o preset restaurou o áudio desejado.
+> Reaplique e confira após religar; não há releitura confiável para identificar
+> a configuração interna.
+
 ### Roteamento experimental dos monitores
 
 Em **Monitor Outputs 1/2**, selecione **DAW 1/2** e pressione **Send Monitor
@@ -119,11 +143,11 @@ escuta; o Monitor Output 2 ainda não foi testado separadamente.
 > confiável nem restauração automática; uma falha pode alterar apenas um lado.
 > A mensagem indica comando enviado, não um estado confirmado.
 
-Para tentar ouvir o computador nos monitores e a Input 1 no HP 01, mantenha
-**Mixing** no Headphone 01 e use o **software monitor** com somente
-**Headphone 01** selecionado. Confirme que a Input 1 deixou de ser ouvida nos
-monitores: outra aplicação ou caminho de áudio também pode enviá-la para DAW
-1/2. Esse monitoramento usa o computador e pode adicionar latência.
+Para ouvir o computador nos monitores e a Input 1 no HP 01, use a opção direta
+descrita abaixo. Como alternativa, mantenha **Mixing** no Headphone 01 e use
+o **software monitor** com somente **Headphone 01** selecionado; esse caminho
+usa o computador e pode adicionar latência. Confirme que a Input 1 deixou de
+ser ouvida nos monitores: outra aplicação também pode enviá-la para DAW 1/2.
 
 ### Presets experimentais do Headphone 01
 
@@ -136,11 +160,20 @@ route**:
 | **DAW Tracking** | DAW 1 / DAW 2 |
 | **Mixing** | DAW 3 / DAW 4 |
 | **Mix 1 left / DAW 2 right** | Mix 1 / DAW 2 |
+| **Input 1 direct to both sides** | Input 1 / Input 1 |
 
 Essas opções afetam **somente o Headphone 01**, não todas as saídas como os
 presets completos do aplicativo original. A alteração envolve dois comandos:
 se ocorrer falha, um lado pode ter mudado e o outro não. Não há releitura
 confiável nem restauração automática; confira o áudio antes de aumentar o volume.
+
+Para ouvir a Input 1 diretamente nos fones, pare o software monitor e envie
+**Input 1 direct to both sides**. A rota não usa o computador nem o ganho do
+software monitor. Foi validada por escuta nos dois lados em 44,1 kHz e continuou
+funcionando após o encerramento do servidor de teste. Abaixe o controle físico
+de volume do HP 01 antes de enviar e ajuste-o gradualmente.
+Essa opção substitui a fonte dos dois lados do HP 01; não mistura o áudio do
+computador aos fones. A configuração pode mudar após desligar a interface.
 
 ### Teste de mapeamento de saída
 

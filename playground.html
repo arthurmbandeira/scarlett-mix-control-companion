@@ -603,6 +603,12 @@
         <h2>Output routing</h2>
         <span class="section-detail">Experimental monitor and Headphone 01 routing and CoreAudio controls.</span>
       </div>
+      <section class="input-gain-read" aria-labelledby="experimental-di-heading">
+        <h3 id="experimental-di-heading">Direct DI preset | experimental hardware routing</h3>
+        <p>Replaces Monitor Outputs 1/2 with DAW 1/2 and both sides of Headphone 01 with Input 1 directly. Tested at 44.1 kHz; Monitor Output 2 has not been tested separately. After one power cycle, computer audio moved to Headphone 01 instead of Monitor Output 1; reapply and verify as needed. Stop software or DAW monitoring of Input 1 to avoid duplicate audio. Lower monitor and headphone volume first: direct input bypasses software-monitor gain. Four writes are required; failure can leave a partial configuration. Current routes cannot be read or restored automatically. This does not start or stop software monitoring or apply automatically.</p>
+        <button class="command-button primary" id="apply-experimental-di" type="button">Send direct DI preset</button>
+        <p class="input-gain-result" id="experimental-di-status" role="status" aria-live="polite">No preset sent. The current hardware state is not shown.</p>
+      </section>
       <section class="input-gain-read" aria-labelledby="experimental-monitor-heading">
         <h3 id="experimental-monitor-heading">Monitor Outputs 1/2 | experimental hardware routing</h3>
         <p>Attempts to route DAW 1 and 2 directly to Monitor Outputs 1 and 2, replacing their current sources. Monitor Output 1 was validated by listening; Output 2 has not been independently tested. Current routing cannot be read or restored automatically; a failure may leave only one channel changed. Lower monitor volume before sending and verify by listening.</p>
@@ -620,7 +626,7 @@
       </section>
       <section class="input-gain-read" aria-labelledby="experimental-route-heading">
         <h3 id="experimental-route-heading">Routing presets | experimental Headphone 01 only</h3>
-        <p>These commands change only Headphone 01, not all outputs as in Scarlett MixControl. Tested at 44.1 kHz; other rates are unverified. Current routing cannot be read or restored automatically. Two writes are required and a failure may leave a partial route. Begin at low listening volume.</p>
+        <p>These commands change only Headphone 01, not all outputs as in Scarlett MixControl. Tested by listening at 44.1 kHz; other rates are unverified. Current routing cannot be read or restored automatically. Two writes are required and a failure may leave a partial route. Lower headphone volume before sending; direct input bypasses software-monitor gain.</p>
         <div class="input-gain-controls">
           <div class="input-gain-channel route-device-select">
             <label class="field-label" for="experimental-route-preset">Headphone 01 route to send</label>
@@ -630,6 +636,7 @@
               <option value="daw-tracking">DAW Tracking (DAW 1/2)</option>
               <option value="mixing">Mixing (DAW 3/4)</option>
               <option value="mix1-left">Mix 1 left / DAW 2 right</option>
+              <option value="input1-direct">Input 1 direct to both sides</option>
             </select>
           </div>
           <button class="command-button primary" id="apply-experimental-route" type="button">Send Headphone 01 route</button>
@@ -1263,13 +1270,14 @@
     window.addEventListener("pagehide", stopSoftwareMonitor);
 
     const experimentalRoutingButtons = [
+      document.querySelector("#apply-experimental-di"),
       document.querySelector("#apply-experimental-monitor"),
       document.querySelector("#apply-experimental-route"),
       document.querySelector("#apply-experimental-mixer-source"),
       document.querySelector("#apply-experimental-mixer-gain")
     ];
-    async function sendExperimentalRouting(select, status, endpoint, field) {
-      if (!select.value) {
+    async function sendExperimentalRouting(value, status, endpoint, field) {
+      if (!value) {
         status.textContent = "Choose a value before sending a command.";
         return;
       }
@@ -1279,7 +1287,7 @@
         const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ [field]: select.value })
+          body: JSON.stringify({ [field]: value })
         });
         const result = await response.json();
         if (!response.ok) throw new Error([result.error, result.detail].filter(Boolean).join(" "));
@@ -1293,6 +1301,9 @@
         experimentalRoutingButtons.forEach((item) => { item.disabled = false; });
       }
     }
+    document.querySelector("#apply-experimental-di").addEventListener("click", () => sendExperimentalRouting(
+      "direct-di", document.querySelector("#experimental-di-status"), "/api/experimental-di-preset", "preset"
+    ));
     [
       ["#apply-experimental-monitor", "#experimental-monitor-source", "#experimental-monitor-status", "/api/experimental-monitor12-source", "source"],
       ["#apply-experimental-route", "#experimental-route-preset", "#experimental-route-status", "/api/experimental-headphone01", "preset"],
@@ -1301,7 +1312,7 @@
     ].forEach(([buttonSelector, selectSelector, statusSelector, endpoint, field]) => {
       const button = document.querySelector(buttonSelector);
       button.addEventListener("click", () => sendExperimentalRouting(
-        document.querySelector(selectSelector), document.querySelector(statusSelector), endpoint, field
+        document.querySelector(selectSelector).value, document.querySelector(statusSelector), endpoint, field
       ));
     });
     let previousMacOSOutputDevice = null;
