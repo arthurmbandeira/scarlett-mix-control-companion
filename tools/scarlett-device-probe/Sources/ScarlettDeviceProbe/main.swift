@@ -80,6 +80,60 @@ func printTextReport(_ snapshot: DeviceSnapshot) {
 }
 
 do {
+  if let optionIndex = CommandLine.arguments.firstIndex(of: "--set-monitor12-source") {
+    guard CommandLine.arguments.indices.contains(optionIndex + 1) else {
+      throw ProbeError.coreAudio(kIOReturnBadArgument, "Usage: --set-monitor12-source <daw12>")
+    }
+    let source = CommandLine.arguments[optionIndex + 1]
+    try setExperimentalMonitor12Source(source)
+    let data = try JSONSerialization.data(
+      withJSONObject: ["source": source, "sent": true, "verified": false],
+      options: [.prettyPrinted, .sortedKeys])
+    print(String(decoding: data, as: UTF8.self))
+    exit(EXIT_SUCCESS)
+  }
+
+  if let optionIndex = CommandLine.arguments.firstIndex(of: "--set-headphone01-preset") {
+    guard CommandLine.arguments.indices.contains(optionIndex + 1),
+      let preset = Headphone01Preset(rawValue: CommandLine.arguments[optionIndex + 1])
+    else {
+      throw ProbeError.coreAudio(
+        kIOReturnBadArgument, "Usage: --set-headphone01-preset <clear|daw-tracking|mixing|mix1-left>")
+    }
+    try setHeadphone01Preset(preset)
+    let data = try JSONSerialization.data(
+      withJSONObject: ["preset": preset.rawValue, "sent": true, "verified": false],
+      options: [.prettyPrinted, .sortedKeys])
+    print(String(decoding: data, as: UTF8.self))
+    exit(EXIT_SUCCESS)
+  }
+
+  if let optionIndex = CommandLine.arguments.firstIndex(of: "--set-mixer18-source") {
+    guard CommandLine.arguments.indices.contains(optionIndex + 1) else {
+      throw ProbeError.coreAudio(kIOReturnBadArgument, "Usage: --set-mixer18-source <daw7|daw8>")
+    }
+    let source = CommandLine.arguments[optionIndex + 1]
+    try setExperimentalMixer18Source(source)
+    let data = try JSONSerialization.data(
+      withJSONObject: ["source": source, "sent": true, "verified": false],
+      options: [.prettyPrinted, .sortedKeys])
+    print(String(decoding: data, as: UTF8.self))
+    exit(EXIT_SUCCESS)
+  }
+
+  if let optionIndex = CommandLine.arguments.firstIndex(of: "--set-mixer18-gain") {
+    guard CommandLine.arguments.indices.contains(optionIndex + 1) else {
+      throw ProbeError.coreAudio(kIOReturnBadArgument, "Usage: --set-mixer18-gain <off|minus12>")
+    }
+    let gain = CommandLine.arguments[optionIndex + 1]
+    try setExperimentalMixer18Gain(gain)
+    let data = try JSONSerialization.data(
+      withJSONObject: ["gain": gain, "sent": true, "verified": false],
+      options: [.prettyPrinted, .sortedKeys])
+    print(String(decoding: data, as: UTF8.self))
+    exit(EXIT_SUCCESS)
+  }
+
   if let optionIndex = CommandLine.arguments.firstIndex(of: "--read-monitor-input-gains") {
     guard CommandLine.arguments.indices.contains(optionIndex + 1),
       let channel = Int(CommandLine.arguments[optionIndex + 1])
@@ -235,6 +289,27 @@ do {
       withJSONObject: output, options: [.prettyPrinted, .sortedKeys])
     print(String(decoding: data, as: UTF8.self))
     exit(EXIT_SUCCESS)
+  }
+
+  if let optionIndex = CommandLine.arguments.firstIndex(of: "--monitor-scarlett-input") {
+    guard CommandLine.arguments.indices.contains(optionIndex + 3),
+      let inputChannel = Int(CommandLine.arguments[optionIndex + 1]),
+      let gainDecibels = Double(CommandLine.arguments[optionIndex + 3])
+    else {
+      throw ProbeError.coreAudio(
+        kIOReturnBadArgument,
+        "Usage: --monitor-scarlett-input <input> <comma-separated outputs> <gain dB>")
+    }
+    let outputArguments = CommandLine.arguments[optionIndex + 2].split(separator: ",")
+    let outputChannels = outputArguments.compactMap { Int($0) }
+    guard !outputArguments.isEmpty, outputChannels.count == outputArguments.count else {
+      throw ProbeError.coreAudio(
+        kIOReturnBadArgument, "Output channels must be comma-separated integers")
+    }
+    try streamScarlettSoftwareMonitor(
+      inputChannel: inputChannel,
+      outputChannels: outputChannels,
+      gainDecibels: gainDecibels)
   }
 
   if let optionIndex = CommandLine.arguments.firstIndex(of: "--read-input-gain") {

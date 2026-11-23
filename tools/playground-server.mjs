@@ -8,6 +8,8 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const probePackagePath = resolve(workspaceRoot, "tools/scarlett-device-probe");
 const host = "127.0.0.1";
 const port = Number(process.env.PORT || 8787);
+let activeSoftwareMonitorResponse = null;
+let activeExperimentalRoutingWrite = false;
 const mimeTypes = new Map([
   [".html", "text/html; charset=utf-8"],
   [".png", "image/png"]
@@ -110,7 +112,7 @@ function readInputGain(response, channel) {
   });
 }
 
-function runProbeCommand(response, args, failureMessage) {
+function runProbeCommand(response, args, failureMessage, onComplete = () => {}) {
   const child = spawn("swift", probeArguments(...args), {
     cwd: workspaceRoot,
     stdio: ["ignore", "pipe", "pipe"]
@@ -132,6 +134,7 @@ function runProbeCommand(response, args, failureMessage) {
   });
   child.on("close", (exitCode) => {
     clearTimeout(timeout);
+    onComplete();
     if (response.writableEnded) return;
     if (exitCode !== 0) {
       return sendJSON(response, 503, { error: failureMessage, detail: stderr.trim() });
@@ -200,12 +203,19 @@ function measureAllInputLevels(response) {
   );
 }
 
-function streamMeters(response, channels, direction = "input") {
-  const probeArgumentsForStream = direction === "output"
-    ? ["--stream-scarlett-output-meters", channels.join(",")]
-    : channels.length === 1
-      ? ["--stream-input-meter", String(channels[0])]
-      : ["--stream-input-meters", channels.join(",")];
+function streamMeters(response, channels, direction = "input", streamSettings = null) {
+  const probeArgumentsForStream = direction === "monitor"
+    ? [
+      "--monitor-scarlett-input",
+      String(streamSettings.inputChannel),
+      channels.join(","),
+      String(streamSettings.gainDb)
+    ]
+    : direction === "output"
+      ? ["--stream-scarlett-output-meters", channels.join(",")]
+      : channels.length === 1
+        ? ["--stream-input-meter", String(channels[0])]
+        : ["--stream-input-meters", channels.join(",")];
   const child = spawn("swift", probeArguments(...probeArgumentsForStream), {
     cwd: workspaceRoot,
     stdio: ["ignore", "pipe", "pipe"]
@@ -230,6 +240,12 @@ function streamMeters(response, channels, direction = "input") {
   };
 
   response.on("close", stop);
+  if (direction === "monitor") {
+    activeSoftwareMonitorResponse = response;
+    response.on("close", () => {
+      if (activeSoftwareMonitorResponse === response) activeSoftwareMonitorResponse = null;
+    });
+  }
   child.stdout.setEncoding("utf8");
   child.stderr.setEncoding("utf8");
   child.stdout.on("data", (chunk) => {
@@ -258,7 +274,6 @@ function streamMeters(response, channels, direction = "input") {
     response.end();
   });
 }
-
 const server = createServer(async (request, response) => {
   let pathname;
   let parsedURL;
@@ -294,6 +309,61 @@ const server = createServer(async (request, response) => {
       return sendJSON(response, 400, { error: "Choose unique CoreAudio input channels from 1 to 18." });
     }
     return streamMeters(response, channels);
+  }
+
+  const experimentalRoutingActions = {
+    "/api/experimental-monitor12-source": {
+      field: "source",
+      values: ["daw12"],
+      command: "--set-monitor12-source"
+    },
+    "/api/experimental-headphone01": {
+      field: "preset",
+      values: ["clear", "daw-tracking", "mixing", "mix1-left"],
+      command: "--set-headphone01-preset"
+    },
+    "/api/experimental-mixer18-source": {
+      field: "source",
+      values: ["daw7", "daw8"],
+      command: "--set-mixer18-source"
+    },
+    "/api/experimental-mixer18-gain": {
+      field: "gain",
+      values: ["off", "minus12"],
+      command: "--set-mixer18-gain"
+    }
+  };
+  if (Object.hasOwn(experimentalRoutingActions, pathname)) {
+    if (request.method !== "POST") {
+      response.writeHead(405, { Allow: "POST" });
+      return response.end("Experimental hardware routing requires an explicit POST action.\n");
+    }
+    const chunks = [];
+    let bodySize = 0;
+    for await (const chunk of request) {
+      bodySize += chunk.length;
+      if (bodySize > 1024) return sendJSON(response, 413, { error: "Request body is too large." });
+      chunks.push(chunk);
+    }
+    let input;
+    try {
+      input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch {
+      return sendJSON(response, 400, { error: "Expected a JSON routing selection." });
+    }
+    const action = experimentalRoutingActions[pathname];
+    if (!input || typeof input !== "object" || !action.values.includes(input[action.field])) {
+      return sendJSON(response, 400, { error: `Invalid ${action.field} selection.` });
+    }
+    if (activeExperimentalRoutingWrite) {
+      return sendJSON(response, 409, { error: "Another experimental routing write is in progress." });
+    }
+    activeExperimentalRoutingWrite = true;
+    return runProbeCommand(
+      response, [action.command, input[action.field]],
+      "Experimental routing write failed; the device state may have changed.",
+      () => { activeExperimentalRoutingWrite = false; }
+    );
   }
 
   if (pathname === "/api/output-tone") {
@@ -336,6 +406,27 @@ const server = createServer(async (request, response) => {
       ["--play-scarlett-output-tone", channels.join(","), String(frequencyHz), String(durationMilliseconds)],
       "Could not play the Scarlett output tone."
     );
+  }
+
+  if (pathname === "/api/software-monitor") {
+    if (request.method !== "GET") {
+      response.writeHead(405, { Allow: "GET" });
+      return response.end("Software monitoring uses GET with a server-sent event stream.\n");
+    }
+    if (activeSoftwareMonitorResponse && !activeSoftwareMonitorResponse.writableEnded) {
+      return sendJSON(response, 409, { error: "A software monitor is already active. Stop it before starting another." });
+    }
+    const inputChannel = Number(parsedURL.searchParams.get("input"));
+    const outputChannels = (parsedURL.searchParams.get("outputs") || "").split(",").map(Number);
+    const gainDb = Number(parsedURL.searchParams.get("gainDb"));
+    if (!Number.isInteger(inputChannel) || inputChannel < 1 || inputChannel > 18
+        || outputChannels.length === 0
+        || outputChannels.some((channel) => !Number.isInteger(channel) || channel < 1 || channel > 8)
+        || new Set(outputChannels).size !== outputChannels.length
+        || !Number.isFinite(gainDb) || gainDb < -30 || gainDb > 0) {
+      return sendJSON(response, 400, { error: "Choose input 1-18, unique outputs 1-8, and gain -30 to 0 dB." });
+    }
+    return streamMeters(response, outputChannels, "monitor", { inputChannel, gainDb });
   }
 
   if (pathname === "/api/live-output-meter") {

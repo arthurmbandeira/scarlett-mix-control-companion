@@ -153,7 +153,7 @@
 
     .global-controls {
       display: grid;
-      grid-template-columns: minmax(180px, 1.5fr) minmax(145px, 1fr) minmax(140px, .9fr) minmax(220px, 1.2fr);
+      grid-template-columns: minmax(0, 1fr);
       align-items: end;
       gap: 1px;
       margin-bottom: 20px;
@@ -273,7 +273,6 @@
       border-top: 3px solid #657174;
       box-shadow: inset 0 1px #ffffff12;
     }
-    .channel[data-active="true"] { border-top-color: var(--red); }
     .channel-name { height: 44px; overflow: hidden; font-size: 11px; font-weight: 800; line-height: 1.3; }
     .channel-kind { margin-top: 3px; color: #aab2b0; font-size: 9px; text-transform: uppercase; letter-spacing: .6px; }
     .channel-kind { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
@@ -299,87 +298,14 @@
       right: 1px;
       bottom: 1px;
       left: 1px;
-      height: var(--level, 9%);
+      height: var(--level, 0%);
       background: linear-gradient(to top, #6ec487 0 68%, #d6c45d 68% 88%, #d96149 88%);
       transition: height .24s ease;
     }
     .meter-value { min-height: 13px; color: #afb8b5; font: 9px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; }
-    .fader-wrap { display: flex; justify-content: center; height: 135px; margin: 8px 0 4px; }
-    .fader {
-      width: 26px;
-      height: 132px;
-      margin: 0;
-      accent-color: var(--red);
-      writing-mode: vertical-lr;
-      direction: rtl;
-      cursor: ns-resize;
-    }
-    .fader-value { color: #e8ece8; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; }
-    .pan-row { margin-top: 12px; }
-    .pan-labels { display: flex; justify-content: space-between; margin-bottom: 3px; color: #aeb7b4; font-size: 9px; }
-    .pan-value { min-width: 24px; color: var(--ink); font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; }
-    .pan { width: 100%; height: 14px; margin: 0; accent-color: #d6d9d5; }
-    .switch-row { display: flex; justify-content: center; gap: 7px; margin-top: 9px; }
-    .switch {
-      width: 36px;
-      min-height: 25px;
-      color: #c8cfcc;
-      background: #3a4143;
-      border: 1px solid #606969;
-      border-radius: 2px;
-      font-size: 9px;
-      font-weight: 900;
-    }
-    .switch[aria-pressed="true"] { color: #1a1d1e; background: var(--amber); border-color: var(--amber); }
-    .switch[data-kind="solo"][aria-pressed="true"] { background: #85c8a0; border-color: #85c8a0; }
-    .channel-foot { margin-top: 9px; padding-top: 8px; color: #aab2b0; border-top: 1px solid #ffffff1a; font-size: 9px; text-align: center; }
-
-    .routing-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(290px, .75fr); gap: 18px; align-items: start; }
-    .routing-art {
-      display: block;
-      width: 100%;
-      height: auto;
-      margin: 0 0 13px;
-      background: #171d20;
-      border: 1px solid #3f4a4d;
-    }
-    .routing-art-fallback {
-      min-height: 150px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 7px;
-      margin-bottom: 13px;
-      padding: 20px;
-      color: #b7c1bf;
-      background: #171d20;
-      border: 1px solid #3f4a4d;
-    }
-    .routing-art-fallback strong { color: #eef2f0; font-size: 13px; }
-    .routing-art-fallback span { color: var(--muted); font-size: 11px; }
-    .routing-list { border-top: 1px solid var(--line); }
-    .route-row {
-      display: grid;
-      grid-template-columns: minmax(115px, .75fr) minmax(190px, 1.25fr);
-      align-items: center;
-      gap: 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .route-name { font-size: 11px; font-weight: 700; }
-    .route-group { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; }
-    .route-source { min-height: 30px; font-size: 11px; }
-    .route-note {
-      padding: 13px 14px;
-      color: #c8d0ce;
-      background: #1b2225;
-      border: 1px solid #343e41;
-      border-left: 3px solid #638575;
-      font-size: 11px;
-      line-height: 1.6;
-    }
-    .route-note strong { color: var(--ink); }
-
+    .output-meter-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+    .meter-label { min-height: 24px; color: var(--muted); font-size: 9px; text-align: center; }
+    .output-meter-groups .meter-row { margin-top: 4px; }
     .device-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 24px; }
     .device-status-actions { display: flex; align-items: center; gap: 10px; }
     .live-check-time { color: var(--muted); font-size: 10px; }
@@ -412,6 +338,12 @@
     .input-gain-read p { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
     .input-gain-controls { display: flex; align-items: end; gap: 9px; }
     .input-gain-channel { width: 105px; }
+    .software-monitor-destinations { min-width: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0; padding: 0; border: 0; }
+    .software-monitor-destinations legend { margin-bottom: 5px; }
+    .software-monitor-destinations label { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-size: 10px; white-space: nowrap; }
+    .software-monitor-destinations input { width: 14px; height: 14px; margin: 0; accent-color: var(--red); }
+    .software-monitor-gain { width: min(220px, 100%); }
+    .software-monitor-gain input { width: 100%; accent-color: var(--red); }
     .route-device-select { width: min(380px, 100%); }
     .pad-toggle-label { display: flex; align-items: center; gap: 7px; min-height: 32px; color: var(--ink); font-size: 11px; font-weight: 700; }
     .pad-toggle-label input { width: 16px; height: 16px; accent-color: var(--red); }
@@ -486,7 +418,6 @@
 
     @media (max-width: 1040px) {
       .channel-grid { grid-template-columns: repeat(3, minmax(130px, 1fr)); }
-      .global-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 680px) {
       .topbar { min-height: 54px; padding: 0 16px; }
@@ -496,23 +427,17 @@
       main { padding: 20px 14px 36px; }
       .page-heading { align-items: start; flex-direction: column; gap: 10px; }
       h1 { font-size: 23px; }
-      .global-controls { grid-template-columns: 1fr 1fr; }
       .control-cell { min-height: 68px; padding: 10px; }
-      .global-controls .control-cell:nth-child(3) { grid-column: 1 / -1; }
-      .snapshot-cell { grid-column: 1 / -1; }
       .tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
       .tab { min-width: 0; padding: 10px 6px; font-size: 10px; }
       .section-head { align-items: start; flex-direction: column; gap: 4px; }
       .channel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-      .routing-layout, .device-grid { grid-template-columns: 1fr; }
+      .device-grid { grid-template-columns: 1fr; }
       .device-grid > * { min-width: 0; }
       .device-table { table-layout: fixed; }
       .device-table th { width: 42%; }
       .device-table td { overflow-wrap: anywhere; }
       .input-gain-controls { flex-wrap: wrap; }
-      .route-row { grid-template-columns: minmax(92px, .65fr) minmax(145px, 1.35fr); gap: 8px; }
-      .route-name { font-size: 10px; }
-      .route-source { font-size: 10px; }
       .offline-tag { align-self: start; max-width: 100%; white-space: normal; }
     }
     @media (max-width: 380px) {
@@ -564,20 +489,8 @@
     :root[data-theme="light"] .signal-button { color: var(--ink); background: #f8f9f6; border-color: #b9c0bd; }
     :root[data-theme="light"] .signal-button[aria-pressed="true"] { color: #215a37; background: #e0f0e5; border-color: #92c5a1; }
     :root[data-theme="light"] .channel { color: #202426; background: linear-gradient(155deg, #fff, #edf1ee 58%, #e3e9e6); border-color: #c4ceca; border-top-color: #7c8584; }
-    :root[data-theme="light"] .channel[data-active="true"] { border-top-color: var(--red); }
     :root[data-theme="light"] .channel-kind,
-    :root[data-theme="light"] .meter-value,
-    :root[data-theme="light"] .pan-labels,
-    :root[data-theme="light"] .channel-foot { color: #687174; }
-    :root[data-theme="light"] .fader-value { color: #202426; }
-    :root[data-theme="light"] .pan { accent-color: #67716e; }
-    :root[data-theme="light"] .switch { color: #424a48; background: #e0e5e2; border-color: #aeb8b4; }
-    :root[data-theme="light"] .switch[aria-pressed="true"] { color: #1a1d1e; background: var(--amber); border-color: var(--amber); }
-    :root[data-theme="light"] .switch[data-kind="solo"][aria-pressed="true"] { background: #85c8a0; border-color: #85c8a0; }
-    :root[data-theme="light"] .routing-art { background: #e4e9e6; border-color: #aeb9b5; }
-    :root[data-theme="light"] .routing-art-fallback { color: #444c4e; background: #e4e9e6; border-color: #aeb9b5; }
-    :root[data-theme="light"] .routing-art-fallback strong { color: #202426; }
-    :root[data-theme="light"] .route-note { color: #444c4e; background: #e6e9e5; border-color: #d5dbd8; border-left-color: #7d9b90; }
+    :root[data-theme="light"] .meter-value { color: #687174; }
     :root[data-theme="light"] .device-table thead th { background: #e4e9e6; }
     :root[data-theme="light"] .notice { color: #754515; background: #f4e8d4; border-color: #e4d2b1; }
     :root[data-theme="light"] .input-gain-read { background: #e6e9e5; border-color: #d2d9d5; border-left-color: #789484; }
@@ -621,50 +534,20 @@
       <div>
         <p class="eyebrow">Scarlett 18i8 | 1st generation</p>
         <h1>MixControl</h1>
-        <p class="page-note">Built for the Scarlett 18i8 1st gen. Inputs 1-18 and Outputs 1-8 can be metered live; faders and routing remain simulated.</p>
+        <p class="page-note">Built for the Scarlett 18i8 1st gen. Live meters and limited experimental hardware routing are available.</p>
       </div>
-      <span class="offline-tag">Inputs 1-18 live meters | routing simulated</span>
+      <span class="offline-tag">Live meters | limited experimental routing</span>
     </div>
 
     <section class="global-controls" aria-label="Global device controls">
-      <div class="control-cell">
-        <label for="device-select">Simulation profile</label>
-        <select id="device-select">
-          <option value="Scarlett 18i8" selected>Scarlett 18i8 (1st Gen)</option>
-          <option value="Scarlett 18i20">Scarlett 18i20</option>
-          <option>Scarlett 18i6</option>
-          <option>Scarlett 8i6</option>
-          <option>Scarlett 6i6</option>
-        </select>
-      </div>
-      <div class="control-cell">
-        <label for="clock-select">Simulation clock</label>
-        <select id="clock-select">
-          <option>Internal</option>
-          <option>ADAT</option>
-          <option>S/PDIF</option>
-        </select>
-      </div>
-      <div class="control-cell">
-        <label for="rate-select">Simulation sample rate</label>
-        <select id="rate-select">
-          <option>44.1 kHz</option>
-          <option selected>48 kHz</option>
-          <option>88.2 kHz</option>
-          <option>96 kHz</option>
-          <option>176.4 kHz</option>
-          <option>192 kHz</option>
-        </select>
-      </div>
       <div class="control-cell snapshot-cell">
         <label for="snapshot-name">Snapshot</label>
         <div class="snapshot-actions">
           <input id="snapshot-name" type="text" value="Late night mix" aria-label="Snapshot name">
           <button class="command-button primary" id="save-snapshot" type="button">Save live</button>
-          <button class="command-button" id="load-snapshot" type="button">Load UI</button>
           <button class="command-button" id="apply-snapshot" type="button">Apply hardware</button>
         </div>
-        <p class="snapshot-status" id="snapshot-status" role="status" aria-live="polite">Snapshots store UI state and can capture verified Scarlett/macOS hardware state.</p>
+        <p class="snapshot-status" id="snapshot-status" role="status" aria-live="polite">Snapshots capture verified Scarlett/macOS hardware state, excluding experimental routing.</p>
       </div>
     </section>
 
@@ -677,25 +560,82 @@
     <section class="view active" id="view-mixer" role="tabpanel" aria-labelledby="tab-mixer">
       <div class="section-head">
         <h2>Monitor mix</h2>
-        <span class="section-detail">Inputs 1-18 and Scarlett Outputs 1-8 support live meters. The output tap reads host audio; internal direct monitoring may not appear.</span>
+        <span class="section-detail">Output pairs show the host tap and software-monitor signal separately. The tap may include the software monitor but not internal direct monitoring; these are not a combined hardware-output meter.</span>
       </div>
       <div class="mixer-toolbar">
         <div>
-          <button class="signal-button" id="signal-toggle" type="button" aria-pressed="false">Start meter demo</button>
           <button class="signal-button" id="live-input-toggle" type="button" aria-pressed="false">Start input meters</button>
           <button class="signal-button" id="live-output-toggle" type="button" aria-pressed="false">Start output meter</button>
           <span class="signal-status" id="signal-status">Meters idle</span>
+          <span class="signal-status" id="output-signal-status">Output tap stopped</span>
         </div>
-        <span class="section-detail">Drag a fader | pan | toggle M / S</span>
       </div>
-      <div class="channel-grid" id="channel-grid" aria-label="Live CoreAudio input and output meters with simulated playback returns"></div>
+      <section class="input-gain-read" aria-labelledby="experimental-mixer-heading">
+        <h3 id="experimental-mixer-heading">Audio source select | experimental hardware: mixer channel 18</h3>
+        <p>The source is shared across mixes; changing it can affect other outputs. Only DAW 7 and DAW 8 on channel 18 were tested, at 44.1 kHz. Existing assignments cannot be read or checked for duplicates. The actual source and gain are not shown here. Keep listening levels low.</p>
+        <div class="input-gain-controls">
+          <div class="input-gain-channel">
+            <label class="field-label" for="experimental-mixer-source">Source to send</label>
+            <select id="experimental-mixer-source">
+              <option value="">Select source...</option>
+              <option value="daw7">DAW 7</option>
+              <option value="daw8">DAW 8</option>
+            </select>
+          </div>
+          <button class="command-button primary" id="apply-experimental-mixer-source" type="button">Send source</button>
+          <div class="input-gain-channel">
+            <label class="field-label" for="experimental-mixer-gain">Channel 18 gain in Mix 1</label>
+            <select id="experimental-mixer-gain">
+              <option value="">Select gain...</option>
+              <option value="off">Off</option>
+              <option value="minus12">-12 dB</option>
+            </select>
+          </div>
+          <button class="command-button primary" id="apply-experimental-mixer-gain" type="button">Send gain</button>
+        </div>
+        <p class="input-gain-result" id="experimental-mixer-status" role="status" aria-live="polite">No mixer command sent. These controls do not show the current hardware state.</p>
+      </section>
+      <div class="channel-grid" id="channel-grid" aria-label="Live CoreAudio input and output meters"></div>
     </section>
 
     <section class="view" id="view-routing" role="tabpanel" aria-labelledby="tab-routing">
       <div class="section-head">
         <h2>Output routing</h2>
-        <span class="section-detail">18i8 1st-gen output reference; selectors remain simulated.</span>
+        <span class="section-detail">Experimental monitor and Headphone 01 routing and CoreAudio controls.</span>
       </div>
+      <section class="input-gain-read" aria-labelledby="experimental-monitor-heading">
+        <h3 id="experimental-monitor-heading">Monitor Outputs 1/2 | experimental hardware routing</h3>
+        <p>Attempts to route DAW 1 and 2 directly to Monitor Outputs 1 and 2, replacing their current sources. Monitor Output 1 was validated by listening; Output 2 has not been independently tested. Current routing cannot be read or restored automatically; a failure may leave only one channel changed. Lower monitor volume before sending and verify by listening.</p>
+        <div class="input-gain-controls">
+          <div class="input-gain-channel route-device-select">
+            <label class="field-label" for="experimental-monitor-source">Monitor 1/2 source to send</label>
+            <select id="experimental-monitor-source">
+              <option value="">Select source...</option>
+              <option value="daw12">DAW 1/2</option>
+            </select>
+          </div>
+          <button class="command-button primary" id="apply-experimental-monitor" type="button">Send Monitor 1/2 route</button>
+        </div>
+        <p class="input-gain-result" id="experimental-monitor-status" role="status" aria-live="polite">No monitor command sent. This selection does not display the current hardware state.</p>
+      </section>
+      <section class="input-gain-read" aria-labelledby="experimental-route-heading">
+        <h3 id="experimental-route-heading">Routing presets | experimental Headphone 01 only</h3>
+        <p>These commands change only Headphone 01, not all outputs as in Scarlett MixControl. Tested at 44.1 kHz; other rates are unverified. Current routing cannot be read or restored automatically. Two writes are required and a failure may leave a partial route. Begin at low listening volume.</p>
+        <div class="input-gain-controls">
+          <div class="input-gain-channel route-device-select">
+            <label class="field-label" for="experimental-route-preset">Headphone 01 route to send</label>
+            <select id="experimental-route-preset">
+              <option value="">Select route...</option>
+              <option value="clear">Clear (both sides off)</option>
+              <option value="daw-tracking">DAW Tracking (DAW 1/2)</option>
+              <option value="mixing">Mixing (DAW 3/4)</option>
+              <option value="mix1-left">Mix 1 left / DAW 2 right</option>
+            </select>
+          </div>
+          <button class="command-button primary" id="apply-experimental-route" type="button">Send Headphone 01 route</button>
+        </div>
+        <p class="input-gain-result" id="experimental-route-status" role="status" aria-live="polite">No route sent. This selection does not display the current hardware state.</p>
+      </section>
       <section class="input-gain-read" aria-labelledby="output-tone-heading">
         <h3 id="output-tone-heading">CoreAudio output mapping test | controlled tone</h3>
         <div class="input-gain-controls">
@@ -721,6 +661,25 @@
         </div>
         <p class="input-gain-result" id="output-tone-status" role="status" aria-live="polite">Choose one CoreAudio output channel, then listen or observe the corresponding physical socket.</p>
       </section>
+      <section class="input-gain-read" aria-labelledby="software-monitor-heading">
+        <h3 id="software-monitor-heading">Standalone software monitor | Input 1</h3>
+        <p>Copies Scarlett Input 1 to selected CoreAudio outputs without Ableton. Uses a software audio callback, not the Scarlett hardware matrix; it can add latency. Disable any existing direct-monitor path first to avoid doubled audio. Start at low headphone/speaker volume.</p>
+        <div class="input-gain-controls">
+          <fieldset class="software-monitor-destinations" id="software-monitor-outputs">
+            <legend class="field-label">Destinations</legend>
+            <label><input type="checkbox" value="1,2" checked> Monitor 1/2 (rear)</label>
+            <label><input type="checkbox" value="3,4" checked> Headphone 01</label>
+            <label><input type="checkbox" value="5,6"> Headphone 02</label>
+            <label><input type="checkbox" value="7,8"> S/PDIF</label>
+          </fieldset>
+          <div class="software-monitor-gain">
+            <label class="field-label" for="software-monitor-gain">Software monitor gain <output id="software-monitor-gain-value">-12 dB</output></label>
+            <input id="software-monitor-gain" type="range" min="-30" max="0" step="1" value="-12">
+          </div>
+          <button class="command-button primary" id="software-monitor-toggle" type="button" aria-pressed="false">Start software monitor</button>
+        </div>
+        <p class="input-gain-result" id="software-monitor-status" role="status" aria-live="polite">CoreAudio software path is stopped.</p>
+      </section>
       <section class="input-gain-read" aria-labelledby="routing-output-heading">
         <h3 id="routing-output-heading">macOS output routing | effective Scarlett route</h3>
         <p>Apply sends all macOS host audio to the Scarlett as the system output. It verifies read-back and can restore the previous default device.</p>
@@ -730,19 +689,6 @@
         </div>
         <p class="input-gain-result" id="routing-output-status" role="status" aria-live="polite">Read the current macOS default output before applying a route.</p>
       </section>
-      <div class="routing-layout">
-        <div>
-          <img class="routing-art" id="routing-art" src="target/Scarlett%20MixControl.app/Contents/Resources/Bg18i8Routing.png" alt="Scarlett 18i8 first-generation routing reference for outputs 3 through 6 and S/PDIF">
-          <div class="routing-art-fallback" id="routing-art-fallback" hidden>
-            <strong>Original routing artwork not included</strong>
-            <span>The app bundle is kept local; routing controls below remain simulated.</span>
-          </div>
-          <div class="routing-list" id="routing-list"></div>
-        </div>
-        <aside class="route-note">
-          <strong>Try a reroute.</strong> Change Output 3 to Playback 3. This control updates only this page; no hardware routing is changed.
-        </aside>
-      </div>
     </section>
 
     <section class="view" id="view-device" role="tabpanel" aria-labelledby="tab-device">
@@ -767,9 +713,6 @@
               <tr><th scope="row">macOS default output</th><td id="default-output-device">Not checked</td></tr>
               <tr><th scope="row">Nominal sample rate</th><td id="live-sample-rate">Not checked</td></tr>
               <tr><th scope="row">USB interfaces</th><td id="live-interfaces">Not checked</td></tr>
-              <tr><th scope="row">Simulation profile</th><td id="device-profile-readout">Scarlett 18i8</td></tr>
-              <tr><th scope="row">Simulation clock</th><td id="clock-readout">Internal</td></tr>
-              <tr><th scope="row">Simulation rate</th><td id="rate-readout">48 kHz</td></tr>
             </tbody>
           </table>
           <div class="notice">Default input/output are macOS host routes. Ableton may select its own device; Scarlett monitor mixes and hardware output routing are not read here.</div>
@@ -952,7 +895,7 @@
       </div>
     </section>
 
-    <p class="footer-note">Reverse-engineering companion | all changes stay in this browser tab unless you save a snapshot locally.</p>
+    <p class="footer-note">Reverse-engineering companion | explicitly applied hardware controls affect the device.</p>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -980,31 +923,21 @@
     });
 
     const channels = [
-      { name: "Analogue 1", kind: "Hardware input", inputChannels: [1], stereo: false, level: -8, pan: 0 },
-      { name: "Analogue 2", kind: "Hardware input", inputChannels: [2], stereo: false, level: -10, pan: 0 },
-      { name: "Analogue 3/4", kind: "Hardware input", inputChannels: [3, 4], stereo: true, level: -14, pan: 0 },
-      { name: "Monitor 1/2", kind: "Main output", outputChannels: [1, 2], stereo: true, level: -6, pan: 0 },
-      { name: "Outputs 3/4", kind: "Line output", outputChannels: [3, 4], stereo: true, level: -6, pan: 0 },
-      { name: "Outputs 5/6", kind: "CoreAudio output", outputChannels: [5, 6], stereo: true, level: -6, pan: 0 },
-      { name: "Outputs 7/8", kind: "CoreAudio output", outputChannels: [7, 8], stereo: true, level: -6, pan: 0 },
-      { name: "Playback 1/2", kind: "DAW return", stereo: true, level: -4, pan: 0 },
-      { name: "Playback 3/4", kind: "DAW return", stereo: true, level: -18, pan: 0 },
+      { name: "Input 1", kind: "CoreAudio input", inputChannels: [1] },
+      { name: "Input 2", kind: "CoreAudio input", inputChannels: [2] },
+      { name: "Inputs 3/4", kind: "CoreAudio input", inputChannels: [3, 4] },
+      ...Array.from({ length: 4 }, (_, index) => ({
+        name: `Outputs ${index * 2 + 1}/${index * 2 + 2}`,
+        kind: "CoreAudio output",
+        outputChannels: [index * 2 + 1, index * 2 + 2]
+      })),
       ...Array.from({ length: 14 }, (_, index) => ({
         name: `Input ${index + 5}`,
         kind: "CoreAudio input",
-        inputChannels: [index + 5],
-        stereo: false,
-        level: -12,
-        pan: 0
+        inputChannels: [index + 5]
       }))
     ];
-    const routing = [
-      ["Output 3", "Headphone"], ["Output 4", "Headphone"],
-      ["Output 5", "Headphone"], ["Output 6", "Headphone"],
-      ["S/PDIF Output 1", "Digital"], ["S/PDIF Output 2", "Digital"]
-    ];
-    const routeSources = ["Mix 1", "Mix 2", "Playback 1", "Playback 2", "Playback 3", "Playback 4", "Analogue 1", "Analogue 2", "Mute"];
-    const pageState = { signal: false, timer: null, liveInput: null, liveOutput: null, outputPeak: null };
+    const pageState = { liveInput: null, liveOutput: null, liveMonitor: null };
     const liveInputChannels = channels.flatMap((channel) => channel.inputChannels || []);
 
     const channelGrid = document.querySelector("#channel-grid");
@@ -1019,94 +952,26 @@
     }
 
     function channelMarkup(channel, index) {
-      const meterCount = channel.stereo ? 2 : 1;
-      const liveInput = Boolean(channel.inputChannels);
-      const liveOutput = Boolean(channel.outputChannels);
-      const panValue = Number(channel.pan);
-      const liveKind = liveInput || liveOutput ? `${channel.kind} | live capable` : `${channel.kind} | simulated`;
-      return `<article class="channel" data-channel="${index}" data-live-input="${liveInput}" data-live-output="${liveOutput}" data-active="false">
-        <div class="channel-name">${channel.name}<div class="channel-kind">${liveKind}</div></div>
-        <div class="meter-row" aria-label="${liveInput || liveOutput ? "Live-capable" : "Simulated"} ${channel.stereo ? "stereo" : "mono"} level meter">
-          ${Array.from({ length: meterCount }, () => `<div class="meter"><div class="meter-level"></div><div class="meter-scale"></div></div>`).join("")}
-        </div>
-        <div class="meter-value" data-meter-value>-inf dBFS</div>
-        <div class="fader-wrap"><input class="fader" type="range" min="-60" max="6" value="${channel.level}" aria-label="${channel.name} level"></div>
-        <div class="fader-value" data-fader-value>${channel.level} dB</div>
-        <div class="pan-row"><div class="pan-labels"><span>L</span><output class="pan-value" data-pan-value>${panValue > 0 ? "+" : ""}${panValue}</output><span>R</span></div>
-          <input class="pan" type="range" min="-50" max="50" value="${channel.pan}" aria-label="${channel.name} pan"></div>
-        <div class="switch-row">
-          <button class="switch" type="button" data-kind="mute" aria-pressed="false" aria-label="Mute ${channel.name}">M</button>
-          <button class="switch" type="button" data-kind="solo" aria-pressed="false" aria-label="Solo ${channel.name}">S</button>
-        </div>
-        <div class="channel-foot">${channel.stereo ? "STEREO LINK" : "MONO"}</div>
+      const meterCount = (channel.inputChannels || channel.outputChannels).length;
+      const meters = Array.from({ length: meterCount }, () => `<div class="meter"><div class="meter-level"></div><div class="meter-scale"></div></div>`).join("");
+      const outputMeter = (source, label) => `<div data-meter-group="${source}">
+        <div class="meter-label">${label}</div>
+        <div class="meter-row" aria-label="${label} ${channel.name} meter stopped">${meters}</div>
+        <div class="meter-value" data-meter-value>Stopped</div>
+      </div>`;
+      return `<article class="channel" data-channel="${index}">
+        <div class="channel-name">${channel.name}<div class="channel-kind">${channel.kind} | live capable</div></div>
+        ${channel.outputChannels
+          ? `<div class="output-meter-groups">${outputMeter("host", "Host tap")}${outputMeter("monitor", "Software monitor")}</div>`
+          : `<div class="meter-row" aria-label="Live-capable ${channel.name} level meter">${meters}</div>
+             <div class="meter-value" data-meter-value>Stopped</div>`}
       </article>`;
     }
 
     channelGrid.innerHTML = channels.map(channelMarkup).join("");
 
-    document.querySelectorAll(".fader").forEach((fader) => {
-      fader.addEventListener("input", () => {
-        fader.closest(".channel").querySelector("[data-fader-value]").textContent = `${fader.value} dB`;
-      });
-    });
-
-    document.querySelectorAll(".pan").forEach((pan) => {
-      pan.addEventListener("input", () => {
-        const value = Number(pan.value);
-        pan.closest(".channel").querySelector("[data-pan-value]").textContent = `${value > 0 ? "+" : ""}${value}`;
-      });
-    });
-
-    document.querySelectorAll(".switch").forEach((button) => {
-      button.addEventListener("click", () => {
-        const nextState = button.getAttribute("aria-pressed") !== "true";
-        button.setAttribute("aria-pressed", String(nextState));
-        button.closest(".channel").dataset.active = String(nextState);
-      });
-    });
-
-    function updateMeters() {
-      document.querySelectorAll(".channel").forEach((channel, index) => {
-        if ((channel.dataset.liveInput === "true" && pageState.liveInput)
-          || (channel.dataset.liveOutput === "true" && pageState.liveOutput)) return;
-        const muted = channel.querySelector('[data-kind="mute"]').getAttribute("aria-pressed") === "true";
-        const fader = Number(channel.querySelector(".fader").value);
-        const levels = channel.querySelectorAll(".meter-level");
-        const value = channel.querySelector("[data-meter-value]");
-        if (!pageState.signal || muted) {
-          levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
-          value.textContent = "-inf dBFS";
-          return;
-        }
-        const base = Math.max(8, Math.min(88, 63 + fader * .75));
-        levels.forEach((meter, meterIndex) => {
-          const variation = Math.random() * 19 + Math.sin(Date.now() / 270 + index * 2 + meterIndex) * 8;
-          meter.style.setProperty("--level", `${Math.max(5, Math.min(92, base - variation))}%`);
-        });
-        value.textContent = `${Math.round(-18 + Math.random() * 7)} dBFS`;
-      });
-    }
-
-    document.querySelector("#signal-toggle").addEventListener("click", (event) => {
-      if (pageState.liveInput) stopLiveInputMeter();
-      if (pageState.liveOutput) stopLiveOutputMeter();
-      pageState.signal = !pageState.signal;
-      event.currentTarget.setAttribute("aria-pressed", String(pageState.signal));
-      event.currentTarget.textContent = pageState.signal ? "Stop meter demo" : "Start meter demo";
-      document.querySelector("#signal-status").textContent = pageState.signal ? "Synthetic signal active" : "Meters idle";
-      document.querySelectorAll(".channel").forEach((channel) => channel.dataset.active = String(pageState.signal));
-      if (pageState.signal) {
-        updateMeters();
-        pageState.timer = setInterval(updateMeters, 280);
-      } else {
-        clearInterval(pageState.timer);
-        updateMeters();
-      }
-    });
-
     const liveInputButton = document.querySelector("#live-input-toggle");
     const liveOutputButton = document.querySelector("#live-output-toggle");
-    const demoButton = document.querySelector("#signal-toggle");
     const liveInputStrips = channels.flatMap((channel, index) => {
       if (!channel.inputChannels) return [];
       const element = document.querySelector(`.channel[data-channel="${index}"]`);
@@ -1130,7 +995,7 @@
           strip.kind.textContent = `No samples | Inputs ${strip.channels.join("/")}`;
           strip.value.textContent = "No data";
           strip.value.title = "No CoreAudio frames received for this input";
-          strip.levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
+          strip.levels.forEach((meter) => meter.style.setProperty("--level", "0%"));
           continue;
         }
         for (const frame of stripFrames) {
@@ -1152,10 +1017,7 @@
         );
       }
       const peak = Math.max(...activeFrames.map((frame) => frame.peakDbFS));
-      const outputStatus = pageState.outputPeak === null
-        ? ""
-        : ` | Outputs 1-8 peak ${pageState.outputPeak.toFixed(1)} dBFS`;
-      document.querySelector("#signal-status").textContent = `Inputs 1-18 live | peak ${peak.toFixed(1)} dBFS${outputStatus}`;
+      document.querySelector("#signal-status").textContent = `Inputs 1-18 live | peak ${peak.toFixed(1)} dBFS`;
     }
 
     function stopLiveInputMeter(statusMessage = null) {
@@ -1163,17 +1025,15 @@
       pageState.liveInput = null;
       liveInputButton.setAttribute("aria-pressed", "false");
       liveInputButton.textContent = "Start input meters";
-      demoButton.disabled = Boolean(pageState.liveOutput);
       for (const strip of liveInputStrips) {
         const inputNames = strip.channels.map((channel) => `Input ${channel}`);
         strip.kind.textContent = `${inputNames.join("/")} | live capable`;
-        strip.value.textContent = "-inf dBFS";
+        strip.value.textContent = "Stopped";
         strip.value.title = "Live input meters are stopped";
-        strip.levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
+        strip.levels.forEach((meter) => meter.style.setProperty("--level", "0%"));
         strip.row.setAttribute("aria-label", `Live-capable input meters: ${inputNames.join(", ")}`);
       }
-      document.querySelector("#signal-status").textContent = statusMessage
-        || (pageState.liveOutput ? "Scarlett Outputs 1-8 live" : pageState.signal ? "Synthetic signal active" : "Meters idle");
+      document.querySelector("#signal-status").textContent = statusMessage || "Input meters stopped";
     }
 
     liveInputButton.addEventListener("click", () => {
@@ -1181,17 +1041,8 @@
         stopLiveInputMeter();
         return;
       }
-      if (pageState.signal) {
-        pageState.signal = false;
-        clearInterval(pageState.timer);
-        pageState.timer = null;
-        demoButton.setAttribute("aria-pressed", "false");
-        demoButton.textContent = "Start meter demo";
-        updateMeters();
-      }
       liveInputButton.setAttribute("aria-pressed", "true");
       liveInputButton.textContent = "Stop input meters";
-      demoButton.disabled = true;
       for (const strip of liveInputStrips) {
         strip.kind.textContent = `Connecting | Inputs ${strip.channels.join("/")}`;
       }
@@ -1219,32 +1070,38 @@
     const liveOutputStrips = channels.flatMap((channel, index) => {
       if (!channel.outputChannels) return [];
       const element = document.querySelector(`.channel[data-channel="${index}"]`);
+      const meterGroup = (name) => {
+        const group = element.querySelector(`[data-meter-group="${name}"]`);
+        return {
+          levels: [...group.querySelectorAll(".meter-level")],
+          value: group.querySelector("[data-meter-value]"),
+          row: group.querySelector(".meter-row")
+        };
+      };
       return [{
         channels: channel.outputChannels,
-        element,
-        levels: [...element.querySelectorAll(".meter-level")],
-        value: element.querySelector("[data-meter-value]"),
-        kind: element.querySelector(".channel-kind"),
-        row: element.querySelector(".meter-row")
+        host: meterGroup("host"),
+        monitor: meterGroup("monitor")
       }];
     });
+
+    function resetOutputMeter(strip, name, status) {
+      const group = strip[name];
+      group.value.textContent = status;
+      group.value.title = `${name === "host" ? "Host tap" : "Software monitor"} Outputs ${strip.channels.join("/")}: ${status}`;
+      group.levels.forEach((meter) => meter.style.setProperty("--level", "0%"));
+      group.row.setAttribute("aria-label", group.value.title);
+    }
 
     function stopLiveOutputMeter(statusMessage = null) {
       if (pageState.liveOutput) pageState.liveOutput.close();
       pageState.liveOutput = null;
-      pageState.outputPeak = null;
       liveOutputButton.setAttribute("aria-pressed", "false");
       liveOutputButton.textContent = "Start output meter";
-      demoButton.disabled = Boolean(pageState.liveInput);
       for (const strip of liveOutputStrips) {
-        strip.kind.textContent = `${strip.channels[0] === 1 ? "Monitor" : "Output"} ${strip.channels.join("/")} | live capable`;
-        strip.value.textContent = "-inf dBFS";
-        strip.value.title = `Scarlett Outputs ${strip.channels.join("/")} meter is stopped`;
-        strip.levels.forEach((meter) => meter.style.setProperty("--level", "3%"));
-        strip.row.setAttribute("aria-label", `Live-capable Scarlett Outputs ${strip.channels.join("/")} stereo meter`);
+        resetOutputMeter(strip, "host", statusMessage ? "Unavailable" : "Stopped");
       }
-      document.querySelector("#signal-status").textContent = statusMessage
-        || (pageState.liveInput ? "Scarlett Inputs 1-18 live" : pageState.signal ? "Synthetic signal active" : "Meters idle");
+      document.querySelector("#output-signal-status").textContent = statusMessage || "Output tap stopped";
     }
 
     liveOutputButton.addEventListener("click", () => {
@@ -1252,63 +1109,56 @@
         stopLiveOutputMeter();
         return;
       }
-      if (pageState.signal) {
-        pageState.signal = false;
-        clearInterval(pageState.timer);
-        pageState.timer = null;
-        demoButton.setAttribute("aria-pressed", "false");
-        demoButton.textContent = "Start meter demo";
-        updateMeters();
-      }
       liveOutputButton.setAttribute("aria-pressed", "true");
       liveOutputButton.textContent = "Stop output meter";
-      demoButton.disabled = true;
       liveOutputStrips.forEach((strip) => {
-        strip.kind.textContent = `Connecting | Outputs ${strip.channels.join("/")}`;
+        resetOutputMeter(strip, "host", "Connecting");
       });
-      document.querySelector("#signal-status").textContent = "Connecting to Scarlett Outputs 1-8...";
+      document.querySelector("#output-signal-status").textContent = "Connecting output tap...";
       const source = new EventSource("/api/live-output-meter");
       pageState.liveOutput = source;
       source.onopen = () => {
-        document.querySelector("#signal-status").textContent = "Output tap connected | waiting for signal";
+        if (pageState.liveOutput !== source) return;
+        document.querySelector("#output-signal-status").textContent = "Output tap connected | waiting for signal";
       };
       source.onmessage = (event) => {
+        if (pageState.liveOutput !== source) return;
         const frames = JSON.parse(event.data).filter((frame) => frame.frames > 0);
         if (frames.length === 0) return;
         for (const strip of liveOutputStrips) {
           const stripFrames = frames.filter((frame) => strip.channels.includes(frame.channel));
-          if (stripFrames.length === 0) continue;
-          for (const frame of stripFrames) {
-            const meterIndex = strip.channels.indexOf(frame.channel);
-            const level = Math.max(3, levelToHistoryPercent(frame.rmsDbFS));
-            strip.levels[meterIndex].style.setProperty("--level", `${level}%`);
+          if (stripFrames.length === 0) {
+            resetOutputMeter(strip, "host", "No data");
+            continue;
           }
+          const readings = strip.channels.map((channel, index) => {
+            const frame = stripFrames.find((item) => item.channel === channel);
+            strip.host.levels[index].style.setProperty("--level", frame ? `${Math.max(3, levelToHistoryPercent(frame.rmsDbFS))}%` : "0%");
+            return frame ? frame.rmsDbFS.toFixed(0) : "--";
+          });
           const stripHasSignal = stripFrames.some((frame) => frame.peakDbFS > -239.9);
-          strip.kind.textContent = stripHasSignal
-            ? `CoreAudio | live Output ${strip.channels.join("/")}`
-            : `CoreAudio | no signal Output ${strip.channels.join("/")}`;
-          strip.value.textContent = `${stripFrames.map((frame) => frame.rmsDbFS.toFixed(0)).join(" / ")} dBFS`;
-          strip.value.title = stripFrames
-            .map((frame) => `Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS | peak ${frame.peakDbFS.toFixed(1)} dBFS`)
+          strip.host.value.textContent = stripHasSignal
+            ? `${readings.join(" / ")} dBFS`
+            : "No signal";
+          strip.host.value.title = stripFrames
+            .map((frame) => `Host tap Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS | peak ${frame.peakDbFS.toFixed(1)} dBFS`)
             .join("; ");
-          strip.row.setAttribute(
+          strip.host.row.setAttribute(
             "aria-label",
-            stripFrames.map((frame) => `Live Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS; peak ${frame.peakDbFS.toFixed(1)} dBFS`).join(". ")
+            stripFrames.map((frame) => `Host tap Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS; peak ${frame.peakDbFS.toFixed(1)} dBFS`).join(". ")
           );
         }
         const peak = Math.max(...frames.map((frame) => frame.peakDbFS));
         const hasSignal = frames.some((frame) => frame.peakDbFS > -239.9);
-        pageState.outputPeak = peak;
         const outputStatus = hasSignal
           ? `Outputs 1-8 signal detected | peak ${peak.toFixed(1)} dBFS`
           : "Output tap connected | no signal on Outputs 1-8";
-        document.querySelector("#signal-status").textContent = pageState.liveInput
-          ? `Inputs 1-18 live | ${outputStatus}`
-          : outputStatus;
+        document.querySelector("#output-signal-status").textContent = outputStatus;
       };
       source.onerror = () => {
         if (pageState.liveOutput === source) {
-          document.querySelector("#signal-status").textContent = "Output meter unavailable; check macOS 14.2+ and System Audio Recording permission";
+          liveOutputStrips.forEach((strip) => resetOutputMeter(strip, "host", "Reconnecting"));
+          document.querySelector("#output-signal-status").textContent = "Output meter unavailable; check macOS 14.2+ and System Audio Recording permission";
         }
       };
       source.addEventListener("probe-error", (event) => {
@@ -1318,20 +1168,142 @@
       });
     });
 
+    const softwareMonitorButton = document.querySelector("#software-monitor-toggle");
+    const softwareMonitorStatus = document.querySelector("#software-monitor-status");
+    const softwareMonitorGain = document.querySelector("#software-monitor-gain");
+    const softwareMonitorGainValue = document.querySelector("#software-monitor-gain-value");
+    softwareMonitorGain.addEventListener("input", () => {
+      softwareMonitorGainValue.value = `${softwareMonitorGain.value} dB`;
+      softwareMonitorGainValue.textContent = `${softwareMonitorGain.value} dB`;
+    });
+
+    function stopSoftwareMonitor(statusMessage = null) {
+      if (pageState.liveMonitor) pageState.liveMonitor.close();
+      pageState.liveMonitor = null;
+      softwareMonitorButton.setAttribute("aria-pressed", "false");
+      softwareMonitorButton.textContent = "Start software monitor";
+      for (const strip of liveOutputStrips) {
+        resetOutputMeter(strip, "monitor", statusMessage ? "Unavailable" : "Stopped");
+      }
+      softwareMonitorStatus.textContent = statusMessage || "CoreAudio software path is stopped.";
+    }
+
+    softwareMonitorButton.addEventListener("click", () => {
+      if (pageState.liveMonitor) {
+        stopSoftwareMonitor();
+        return;
+      }
+      const outputChannels = [...document.querySelectorAll("#software-monitor-outputs input:checked")]
+        .flatMap((checkbox) => checkbox.value.split(",").map(Number));
+      if (outputChannels.length === 0) {
+        softwareMonitorStatus.textContent = "Select at least one output destination.";
+        return;
+      }
+      softwareMonitorButton.setAttribute("aria-pressed", "true");
+      softwareMonitorButton.textContent = "Stop software monitor";
+      softwareMonitorStatus.textContent = `Starting Input 1 to Outputs ${outputChannels.join(", ")}...`;
+      for (const strip of liveOutputStrips) {
+        resetOutputMeter(strip, "monitor", strip.channels.some((channel) => outputChannels.includes(channel)) ? "Connecting" : "Not selected");
+      }
+      const gainDb = softwareMonitorGain.value;
+      const query = new URLSearchParams({
+        input: "1",
+        outputs: outputChannels.join(","),
+        gainDb
+      });
+      const source = new EventSource(`/api/software-monitor?${query}`);
+      pageState.liveMonitor = source;
+      source.onopen = () => {
+        if (pageState.liveMonitor !== source) return;
+        softwareMonitorStatus.textContent = `Input 1 monitoring to Outputs ${outputChannels.join(", ")} at ${gainDb} dB.`;
+      };
+      source.onmessage = (event) => {
+        if (pageState.liveMonitor !== source) return;
+        const frames = JSON.parse(event.data).filter((frame) => frame.frames > 0);
+        if (frames.length === 0) return;
+        for (const strip of liveOutputStrips) {
+          if (!strip.channels.some((channel) => outputChannels.includes(channel))) continue;
+          const stripFrames = frames.filter((frame) => strip.channels.includes(frame.channel));
+          if (stripFrames.length === 0) {
+            resetOutputMeter(strip, "monitor", "No data");
+            continue;
+          }
+          const readings = strip.channels.map((channel, index) => {
+            const frame = stripFrames.find((item) => item.channel === channel);
+            strip.monitor.levels[index].style.setProperty("--level", frame ? `${Math.max(3, levelToHistoryPercent(frame.rmsDbFS))}%` : "0%");
+            return frame ? frame.rmsDbFS.toFixed(1) : "--";
+          });
+          strip.monitor.value.textContent = `${readings.join(" / ")} dBFS`;
+          strip.monitor.value.title = stripFrames
+            .map((frame) => `Software monitor Output ${frame.channel} RMS ${frame.rmsDbFS.toFixed(1)} dBFS | peak ${frame.peakDbFS.toFixed(1)} dBFS`)
+            .join("; ");
+          strip.monitor.row.setAttribute("aria-label", strip.monitor.value.title);
+        }
+      };
+      source.onerror = () => {
+        if (pageState.liveMonitor !== source) return;
+        if (source.readyState === EventSource.CLOSED) {
+          stopSoftwareMonitor("Software monitor could not start. Check Scarlett availability and the selected channels.");
+        } else {
+          for (const strip of liveOutputStrips) {
+            if (strip.channels.some((channel) => outputChannels.includes(channel))) resetOutputMeter(strip, "monitor", "Reconnecting");
+          }
+          softwareMonitorStatus.textContent = "Software monitor connection interrupted; reconnecting...";
+        }
+      };
+      source.addEventListener("probe-error", (event) => {
+        const payload = JSON.parse(event.data);
+        source.close();
+        if (pageState.liveMonitor === source) stopSoftwareMonitor(payload.detail || payload.error);
+      });
+    });
+
     window.addEventListener("pagehide", stopLiveInputMeter);
     window.addEventListener("pagehide", stopLiveOutputMeter);
+    window.addEventListener("pagehide", stopSoftwareMonitor);
 
-    const routeList = document.querySelector("#routing-list");
-    const routingArt = document.querySelector("#routing-art");
-    const routingArtFallback = document.querySelector("#routing-art-fallback");
-    routingArt.addEventListener("error", () => {
-      routingArt.hidden = true;
-      routingArtFallback.hidden = false;
-    }, { once: true });
-    if (routingArt.complete && routingArt.naturalWidth === 0) {
-      routingArt.hidden = true;
-      routingArtFallback.hidden = false;
+    const experimentalRoutingButtons = [
+      document.querySelector("#apply-experimental-monitor"),
+      document.querySelector("#apply-experimental-route"),
+      document.querySelector("#apply-experimental-mixer-source"),
+      document.querySelector("#apply-experimental-mixer-gain")
+    ];
+    async function sendExperimentalRouting(select, status, endpoint, field) {
+      if (!select.value) {
+        status.textContent = "Choose a value before sending a command.";
+        return;
+      }
+      experimentalRoutingButtons.forEach((item) => { item.disabled = true; });
+      status.textContent = "Sending hardware command...";
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [field]: select.value })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error([result.error, result.detail].filter(Boolean).join(" "));
+        if (result.sent !== true || result.verified !== false) {
+          throw new Error("Unexpected response from the hardware bridge.");
+        }
+        status.textContent = "Command sent; actual hardware state is not verified. Listen or measure to confirm.";
+      } catch (error) {
+        status.textContent = `Command failed or could not be confirmed; hardware may have changed. ${error.message}`;
+      } finally {
+        experimentalRoutingButtons.forEach((item) => { item.disabled = false; });
+      }
     }
+    [
+      ["#apply-experimental-monitor", "#experimental-monitor-source", "#experimental-monitor-status", "/api/experimental-monitor12-source", "source"],
+      ["#apply-experimental-route", "#experimental-route-preset", "#experimental-route-status", "/api/experimental-headphone01", "preset"],
+      ["#apply-experimental-mixer-source", "#experimental-mixer-source", "#experimental-mixer-status", "/api/experimental-mixer18-source", "source"],
+      ["#apply-experimental-mixer-gain", "#experimental-mixer-gain", "#experimental-mixer-status", "/api/experimental-mixer18-gain", "gain"]
+    ].forEach(([buttonSelector, selectSelector, statusSelector, endpoint, field]) => {
+      const button = document.querySelector(buttonSelector);
+      button.addEventListener("click", () => sendExperimentalRouting(
+        document.querySelector(selectSelector), document.querySelector(statusSelector), endpoint, field
+      ));
+    });
     let previousMacOSOutputDevice = null;
 
     document.querySelector("#apply-scarlett-output").addEventListener("click", async (event) => {
@@ -1414,29 +1386,11 @@
       }
     });
 
-    routeList.innerHTML = routing.map(([name, group], index) => `<label class="route-row">
-      <span><span class="route-name">${name}</span><br><span class="route-group">${group} bus</span></span>
-      <select class="route-source" data-route="${index}" aria-label="Source for ${name}">${routeSources.map((source, sourceIndex) => `<option${sourceIndex === index % 4 ? " selected" : ""}>${source}</option>`).join("")}</select>
-    </label>`).join("");
-
     document.querySelectorAll(".tab").forEach((tab) => {
       tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
         document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === tab.getAttribute("aria-controls")));
       });
-    });
-
-    document.querySelector("#device-select").addEventListener("change", (event) => {
-      document.querySelector("#device-profile-readout").textContent = event.target.value;
-      showToast(`Profile changed to ${event.target.value} (simulation)`);
-    });
-    document.querySelector("#clock-select").addEventListener("change", (event) => {
-      document.querySelector("#clock-readout").textContent = event.target.value;
-      showToast(`Clock source set to ${event.target.value} (simulation)`);
-    });
-    document.querySelector("#rate-select").addEventListener("change", (event) => {
-      document.querySelector("#rate-readout").textContent = event.target.value;
-      showToast(`Sample rate set to ${event.target.value} (simulation)`);
     });
 
     async function readHardwareSnapshot() {
@@ -1479,46 +1433,6 @@
       return hardware;
     }
 
-    function readState() {
-      return {
-        device: document.querySelector("#device-select").value,
-        clock: document.querySelector("#clock-select").value,
-        rate: document.querySelector("#rate-select").value,
-        channels: [...document.querySelectorAll(".channel")].map((channel) => ({
-          level: channel.querySelector(".fader").value,
-          pan: channel.querySelector(".pan").value,
-          mute: channel.querySelector('[data-kind="mute"]').getAttribute("aria-pressed"),
-          solo: channel.querySelector('[data-kind="solo"]').getAttribute("aria-pressed")
-        })),
-        routes: [...document.querySelectorAll(".route-source")].map((select) => select.value)
-      };
-    }
-
-    function applyState(state) {
-      if (state.device) document.querySelector("#device-select").value = state.device;
-      if (state.clock) document.querySelector("#clock-select").value = state.clock;
-      if (state.rate) document.querySelector("#rate-select").value = state.rate;
-      document.querySelector("#device-profile-readout").textContent = document.querySelector("#device-select").value;
-      document.querySelector("#clock-readout").textContent = document.querySelector("#clock-select").value;
-      document.querySelector("#rate-readout").textContent = document.querySelector("#rate-select").value;
-      (state.channels || []).forEach((saved, index) => {
-        const channel = document.querySelector(`.channel[data-channel="${index}"]`);
-        if (!channel) return;
-        channel.querySelector(".fader").value = saved.level;
-        channel.querySelector("[data-fader-value]").textContent = `${saved.level} dB`;
-        const pan = channel.querySelector(".pan");
-        pan.value = saved.pan;
-        const panValue = Number(saved.pan);
-        channel.querySelector("[data-pan-value]").textContent = `${panValue > 0 ? "+" : ""}${panValue}`;
-        channel.querySelector('[data-kind="mute"]').setAttribute("aria-pressed", saved.mute);
-        channel.querySelector('[data-kind="solo"]').setAttribute("aria-pressed", saved.solo);
-      });
-      (state.routes || []).forEach((source, index) => {
-        const select = document.querySelector(`.route-source[data-route="${index}"]`);
-        if (select) select.value = source;
-      });
-    }
-
     document.querySelector("#save-snapshot").addEventListener("click", async (event) => {
       const button = event.currentTarget;
       const name = document.querySelector("#snapshot-name").value.trim() || "Untitled snapshot";
@@ -1526,7 +1440,6 @@
       try {
         const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
         snapshots[name] = {
-          ...readState(),
           hardware: await readHardwareSnapshot()
         };
         localStorage.setItem("mixcontrol-playground-snapshots", JSON.stringify(snapshots));
@@ -1538,15 +1451,6 @@
         button.disabled = false;
       }
     });
-    document.querySelector("#load-snapshot").addEventListener("click", () => {
-      const name = document.querySelector("#snapshot-name").value.trim();
-      const snapshots = JSON.parse(localStorage.getItem("mixcontrol-playground-snapshots") || "{}");
-      if (!snapshots[name]) return showToast(`No local snapshot named "${name}"`);
-      applyState(snapshots[name]);
-      document.querySelector("#snapshot-status").textContent = `Loaded "${name}" into the browser UI; hardware unchanged.`;
-      showToast(`Loaded "${name}" from this browser`);
-    });
-
     document.querySelector("#apply-snapshot").addEventListener("click", async (event) => {
       const button = event.currentTarget;
       const name = document.querySelector("#snapshot-name").value.trim();
@@ -1559,15 +1463,18 @@
         return;
       }
 
-      applyState(snapshot);
       button.disabled = true;
       try {
         const deviceResponse = await fetch("/api/device", { cache: "no-store" });
         const devicePayload = await deviceResponse.json();
         if (!deviceResponse.ok) throw new Error(devicePayload.error || "Could not refresh devices.");
         const scarlett = (devicePayload.audioDevices || []).find((device) => device.name === "Scarlett 18i8 USB");
+        if (!scarlett) throw new Error("Scarlett 18i8 USB is not available.");
 
         const defaultInput = (devicePayload.audioDevices || []).find((device) => device.name === snapshot.hardware.defaultInputDeviceName && (device.inputChannels || 0) > 0);
+        if (snapshot.hardware.defaultInputDeviceName && !defaultInput) throw new Error("Saved macOS input device is not available.");
+        const defaultOutput = (devicePayload.audioDevices || []).find((device) => device.name === snapshot.hardware.defaultOutputDeviceName && (device.outputChannels || 0) > 0);
+        if (snapshot.hardware.defaultOutputDeviceName && !defaultOutput) throw new Error("Saved macOS output device is not available.");
         if (defaultInput && devicePayload.defaultInputDeviceName !== snapshot.hardware.defaultInputDeviceName) {
           status.textContent = `Applying snapshot macOS input: ${defaultInput.name}...`;
           const response = await fetch("/api/default-input", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceID: defaultInput.deviceID }) });
@@ -1575,7 +1482,6 @@
           if (!response.ok) throw new Error(payload.error || "Could not restore macOS input.");
         }
 
-        const defaultOutput = (devicePayload.audioDevices || []).find((device) => device.name === snapshot.hardware.defaultOutputDeviceName && (device.outputChannels || 0) > 0);
         if (defaultOutput && devicePayload.defaultOutputDeviceName !== snapshot.hardware.defaultOutputDeviceName) {
           status.textContent = `Applying snapshot macOS output: ${defaultOutput.name}...`;
           const response = await fetch("/api/default-output", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceID: defaultOutput.deviceID }) });
@@ -1655,8 +1561,8 @@
         const connected = Boolean(audioDevice || usbDevice);
         dot.dataset.connected = String(connected);
         connectionText.textContent = connected
-          ? `${audioDevice?.name || usbDevice.productName} | live read-only`
-          : "Scarlett not detected | simulation only";
+          ? `${audioDevice?.name || usbDevice.productName} | live status`
+          : "Scarlett not detected";
         document.querySelector("#live-connection").textContent = connected ? "Detected (read-only)" : "Not detected";
         document.querySelector("#live-device").textContent = audioDevice?.name || usbDevice?.productName || "Not detected";
         document.querySelector("#live-manufacturer").textContent = audioDevice?.manufacturer || usbDevice?.manufacturer || "Unavailable";
@@ -1752,7 +1658,7 @@
         document.querySelector("#live-check-time").textContent = `Checked ${new Date().toLocaleTimeString()}`;
       } catch (error) {
         dot.dataset.connected = "false";
-        connectionText.textContent = "Local bridge unavailable | simulation only";
+        connectionText.textContent = "Local bridge unavailable";
         document.querySelector("#live-connection").textContent = "Could not check";
         document.querySelector("#live-device").textContent = error.message;
         document.querySelector("#live-manufacturer").textContent = "Unavailable";

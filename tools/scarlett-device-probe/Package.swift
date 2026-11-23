@@ -8,6 +8,7 @@ let package = Package(
         .executable(name: "ScarlettDeviceProbe", targets: ["ScarlettDeviceProbe"])
     ],
     targets: [
-        .executableTarget(name: "ScarlettDeviceProbe")
+        .executableTarget(name: "ScarlettDeviceProbe"),
+        .testTarget(name: "ScarlettDeviceProbeTests", dependencies: ["ScarlettDeviceProbe"])
     ]
 )

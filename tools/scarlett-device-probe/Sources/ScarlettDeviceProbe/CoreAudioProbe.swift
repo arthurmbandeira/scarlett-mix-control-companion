@@ -396,6 +396,43 @@ func readChannelCount(
   return buffers.reduce(0) { $0 + Int($1.mNumberChannels) }
 }
 
+func readFirstStreamFormat(
+  _ deviceID: AudioObjectID,
+  scope: AudioObjectPropertyScope,
+  operation: String
+) throws -> AudioStreamBasicDescription {
+  var streamAddress = address(kAudioDevicePropertyStreams, scope: scope)
+  var streamsSize: UInt32 = 0
+  try check(
+    AudioObjectGetPropertyDataSize(deviceID, &streamAddress, 0, nil, &streamsSize),
+    operation: "Read \(operation) stream-list size"
+  )
+  let stride = MemoryLayout<AudioStreamID>.stride
+  guard streamsSize >= UInt32(stride), Int(streamsSize) % stride == 0 else {
+    throw ProbeError.unexpectedDataSize(streamsSize, stride)
+  }
+  var streams = [AudioStreamID](repeating: 0, count: Int(streamsSize) / stride)
+  try streams.withUnsafeMutableBytes { buffer in
+    guard let baseAddress = buffer.baseAddress else { return }
+    try check(
+      AudioObjectGetPropertyData(deviceID, &streamAddress, 0, nil, &streamsSize, baseAddress),
+      operation: "Read \(operation) stream list"
+    )
+  }
+  guard let streamID = streams.first else {
+    throw ProbeError.coreAudio(kAudioHardwareBadDeviceError, "No \(operation) stream")
+  }
+
+  var formatAddress = address(kAudioStreamPropertyVirtualFormat)
+  var format = AudioStreamBasicDescription()
+  var formatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+  try check(
+    AudioObjectGetPropertyData(streamID, &formatAddress, 0, nil, &formatSize, &format),
+    operation: "Read \(operation) sample format"
+  )
+  return format
+}
+
 func measureInputSignal(channel: Int, durationMilliseconds: Int = 2000) throws -> InputMeterSnapshot
 {
   guard
@@ -894,6 +931,228 @@ func playScarlettOutputTone(
   try check(AudioDeviceStart(selectedDevice, ioProcID), operation: "Start Scarlett output tone")
   Thread.sleep(forTimeInterval: Double(durationMilliseconds) / 1000)
   try check(AudioDeviceStop(selectedDevice, ioProcID), operation: "Stop Scarlett output tone")
+}
+
+func streamScarlettSoftwareMonitor(
+  inputChannel: Int,
+  outputChannels: [Int],
+  gainDecibels: Double = -12,
+  intervalMilliseconds: Int = 50
+) throws -> Never {
+  let deviceIDs = try readDeviceIDs()
+  var selectedDevice: AudioObjectID?
+  for deviceID in deviceIDs {
+    if let name = try? readString(deviceID, selector: kAudioObjectPropertyName),
+      name == "Scarlett 18i8 USB"
+    {
+      selectedDevice = deviceID
+      break
+    }
+  }
+  guard let selectedDevice else {
+    throw ProbeError.coreAudio(
+      kAudioHardwareBadDeviceError, "Scarlett 18i8 USB is not an audio device")
+  }
+
+  let inputChannelCount = try readChannelCount(
+    selectedDevice, scope: kAudioObjectPropertyScopeInput)
+  let outputChannelCount = try readChannelCount(
+    selectedDevice, scope: kAudioObjectPropertyScopeOutput)
+
+  guard (1...inputChannelCount).contains(inputChannel) else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Input channel must be between 1 and \(inputChannelCount)")
+  }
+  guard !outputChannels.isEmpty,
+    Set(outputChannels).count == outputChannels.count,
+    outputChannels.allSatisfy({ (1...outputChannelCount).contains($0) })
+  else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument,
+      "Output channels must be unique values between 1 and \(outputChannelCount)")
+  }
+  guard gainDecibels >= -30, gainDecibels <= 0 else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Software monitor gain must be between -30 and 0 dB")
+  }
+  guard intervalMilliseconds >= 20, intervalMilliseconds <= 1000 else {
+    throw ProbeError.coreAudio(
+      kIOReturnBadArgument, "Meter stream interval must be between 20 and 1000 ms")
+  }
+
+  let inputFormat = try readFirstStreamFormat(
+    selectedDevice, scope: kAudioObjectPropertyScopeInput, operation: "Scarlett input")
+  let outputFormat = try readFirstStreamFormat(
+    selectedDevice, scope: kAudioObjectPropertyScopeOutput, operation: "Scarlett output")
+  guard inputFormat.mFormatID == kAudioFormatLinearPCM,
+    inputFormat.mFormatFlags & kAudioFormatFlagIsFloat != 0,
+    inputFormat.mBitsPerChannel == 32,
+    inputFormat.mChannelsPerFrame >= UInt32(inputChannel),
+    outputFormat.mFormatID == kAudioFormatLinearPCM,
+    outputFormat.mFormatFlags & kAudioFormatFlagIsFloat != 0,
+    outputFormat.mBitsPerChannel == 32,
+    outputFormat.mChannelsPerFrame >= UInt32(outputChannels.max() ?? 0),
+    abs(inputFormat.mSampleRate - outputFormat.mSampleRate) < 0.5
+  else {
+    throw ProbeError.coreAudio(
+      kAudioHardwareUnspecifiedError,
+      "Scarlett input/output formats are incompatible for software monitoring")
+  }
+
+  let gain = pow(10, gainDecibels / 20)
+  let selectedOutputIndexes = Set(outputChannels.map { $0 - 1 })
+  let accumulators = Dictionary(
+    uniqueKeysWithValues: outputChannels.map { ($0 - 1, InputMeterAccumulator()) })
+  let sumSquares = UnsafeMutablePointer<Double>.allocate(capacity: outputChannelCount)
+  let peaks = UnsafeMutablePointer<Double>.allocate(capacity: outputChannelCount)
+  let frameCounters = UnsafeMutablePointer<UInt64>.allocate(capacity: outputChannelCount)
+  sumSquares.initialize(repeating: 0, count: outputChannelCount)
+  peaks.initialize(repeating: 0, count: outputChannelCount)
+  frameCounters.initialize(repeating: 0, count: outputChannelCount)
+  defer {
+    sumSquares.deinitialize(count: outputChannelCount)
+    sumSquares.deallocate()
+    peaks.deinitialize(count: outputChannelCount)
+    peaks.deallocate()
+    frameCounters.deinitialize(count: outputChannelCount)
+    frameCounters.deallocate()
+  }
+
+  let captureQueue = DispatchQueue(
+    label: "ScarlettDeviceProbe.softwareMonitorCapture", qos: .userInitiated)
+  let outputQueue = DispatchQueue(
+    label: "ScarlettDeviceProbe.softwareMonitorOutput", qos: .utility)
+  var ioProcID: AudioDeviceIOProcID?
+  let createStatus = AudioDeviceCreateIOProcIDWithBlock(
+    &ioProcID,
+    selectedDevice,
+    captureQueue
+  ) { _, inputData, _, outputData, _ in
+    let inputBuffers = UnsafeMutableAudioBufferListPointer(
+      UnsafeMutablePointer(mutating: inputData))
+    let outputBuffers = UnsafeMutableAudioBufferListPointer(outputData)
+    let inputIndex = inputChannel - 1
+    var inputChannelOffset = 0
+    var inputSamples: UnsafePointer<Float32>?
+    var inputBufferChannels = 0
+    var inputBufferChannel = 0
+    var inputFrames = 0
+
+    for buffer in inputBuffers {
+      let bufferChannels = Int(buffer.mNumberChannels)
+      if let data = buffer.mData,
+        bufferChannels > 0,
+        inputIndex >= inputChannelOffset,
+        inputIndex < inputChannelOffset + bufferChannels
+      {
+        inputSamples = UnsafeRawPointer(data).assumingMemoryBound(to: Float32.self)
+        inputBufferChannels = bufferChannels
+        inputBufferChannel = inputIndex - inputChannelOffset
+        inputFrames = Int(buffer.mDataByteSize) / MemoryLayout<Float32>.stride / bufferChannels
+        break
+      }
+      inputChannelOffset += bufferChannels
+    }
+
+    for channel in 0..<outputChannelCount {
+      sumSquares[channel] = 0
+      peaks[channel] = 0
+      frameCounters[channel] = 0
+    }
+
+    var outputChannelOffset = 0
+    for buffer in outputBuffers {
+      let bufferChannels = Int(buffer.mNumberChannels)
+      if let data = buffer.mData, bufferChannels > 0 {
+        let outputSamples = data.assumingMemoryBound(to: Float32.self)
+        let outputFrames = Int(buffer.mDataByteSize) / MemoryLayout<Float32>.stride / bufferChannels
+        for frame in 0..<outputFrames {
+          let inputValue: Double
+          if let inputSamples, frame < inputFrames {
+            inputValue = Double(
+              inputSamples[frame * inputBufferChannels + inputBufferChannel])
+          } else {
+            inputValue = 0
+          }
+          let monitoredSample = Float32(max(-1, min(1, inputValue * gain)))
+          for bufferChannel in 0..<bufferChannels {
+            let outputIndex = outputChannelOffset + bufferChannel
+            let isSelected = selectedOutputIndexes.contains(outputIndex)
+            outputSamples[frame * bufferChannels + bufferChannel] =
+              isSelected ? monitoredSample : 0
+            if isSelected {
+              let sample = Double(monitoredSample)
+              sumSquares[outputIndex] += sample * sample
+              peaks[outputIndex] = max(peaks[outputIndex], abs(sample))
+              frameCounters[outputIndex] += 1
+            }
+          }
+        }
+      }
+      outputChannelOffset += bufferChannels
+    }
+
+    for outputChannel in outputChannels {
+      let index = outputChannel - 1
+      accumulators[index]?.add(
+        sumSquares: sumSquares[index],
+        peak: peaks[index],
+        frames: frameCounters[index]
+      )
+    }
+  }
+  try check(createStatus, operation: "Create Scarlett software-monitor callback")
+  guard let ioProcID else {
+    throw ProbeError.coreAudio(
+      kAudioHardwareBadDeviceError, "Create Scarlett software-monitor callback")
+  }
+  defer { _ = AudioDeviceDestroyIOProcID(selectedDevice, ioProcID) }
+  try check(
+    AudioDeviceStart(selectedDevice, ioProcID), operation: "Start Scarlett software monitor")
+
+  let encoder = JSONEncoder()
+  let timer = DispatchSource.makeTimerSource(queue: outputQueue)
+  timer.schedule(
+    deadline: .now(), repeating: .milliseconds(intervalMilliseconds), leeway: .milliseconds(5))
+  timer.setEventHandler {
+    captureQueue.async {
+      let frames = outputChannels.sorted().compactMap { channel -> MeterStreamFrame? in
+        guard let accumulator = accumulators[channel - 1] else { return nil }
+        let interval = accumulator.take()
+        let rms =
+          interval.frames > 0
+          ? sqrt(interval.sumSquares / Double(interval.frames))
+          : 0
+        return MeterStreamFrame(
+          device: "Scarlett 18i8 USB software monitor",
+          direction: .softwareMonitor,
+          channel: channel,
+          sampleRateHz: outputFormat.mSampleRate,
+          frames: interval.frames,
+          rmsDbFS: 20 * log10(max(rms, 1e-12)),
+          peakDbFS: 20 * log10(max(interval.peak, 1e-12))
+        )
+      }
+      outputQueue.async {
+        if let data = try? encoder.encode(frames) {
+          FileHandle.standardOutput.write(data)
+          FileHandle.standardOutput.write(Data([0x0A]))
+        }
+      }
+    }
+  }
+  timer.resume()
+
+  Darwin.signal(SIGTERM, SIG_IGN)
+  let termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: outputQueue)
+  termination.setEventHandler {
+    timer.cancel()
+    _ = AudioDeviceStop(selectedDevice, ioProcID)
+    _ = AudioDeviceDestroyIOProcID(selectedDevice, ioProcID)
+    exit(EXIT_SUCCESS)
+  }
+  termination.resume()
+  dispatchMain()
 }
 
 @available(macOS 14.2, *)

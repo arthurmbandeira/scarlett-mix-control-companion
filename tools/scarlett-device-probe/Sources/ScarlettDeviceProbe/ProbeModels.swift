@@ -4,6 +4,7 @@ import Foundation
 enum ProbeError: Error, CustomStringConvertible {
   case coreAudio(OSStatus, String)
   case unexpectedDataSize(UInt32, Int)
+  case routingWriteFailed(Int, String)
 
   var description: String {
     switch self {
@@ -11,6 +12,8 @@ enum ProbeError: Error, CustomStringConvertible {
       return "\(operation) failed with CoreAudio status \(status)"
     case .unexpectedDataSize(let actual, let expected):
       return "CoreAudio returned \(actual) bytes; expected \(expected)"
+    case .routingWriteFailed(let completed, let detail):
+      return "Output routing stopped after \(completed) channel(s); earlier writes may have changed the device. \(detail)"
     }
   }
 }
@@ -96,6 +99,7 @@ struct InputMeterSnapshot: Encodable {
 enum MeterDirection: String, Encodable {
   case input
   case output
+  case softwareMonitor = "software-monitor"
 }
 
 struct MeterStreamFrame: Encodable {

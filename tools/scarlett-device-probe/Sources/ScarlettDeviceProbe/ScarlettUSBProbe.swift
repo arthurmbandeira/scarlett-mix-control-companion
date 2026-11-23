@@ -291,6 +291,86 @@ func sendScarlettControlRequest(
   throw ProbeError.coreAudio(kIOReturnNoDevice, "Scarlett 18i8 USB is not connected")
 }
 
+enum Headphone01Preset: String {
+  case clear
+  case dawTracking = "daw-tracking"
+  case mixing
+  case mix1Left = "mix1-left"
+
+  var sources: [UInt16] {
+    switch self {
+    case .clear: return [0xffff, 0xffff]
+    case .dawTracking: return [0, 1]
+    case .mixing: return [2, 3]
+    case .mix1Left: return [26, 1]
+    }
+  }
+}
+
+func writeRoutingValue(entity: UInt8, selector: UInt8, channel: Int, value: UInt16) throws {
+  _ = try sendScarlettControlRequest(
+    channel: channel,
+    selector: selector,
+    requestType: 0x21,
+    payload: [UInt8(truncatingIfNeeded: value), UInt8(truncatingIfNeeded: value >> 8)],
+    allowedChannels: 0...143,
+    entityID: entity
+  )
+}
+
+func setHeadphone01Preset(
+  _ preset: Headphone01Preset,
+  write: (UInt8, UInt8, Int, UInt16) throws -> Void = writeRoutingValue
+) throws {
+  try setOutputPair(firstChannel: 2, sources: preset.sources, write: write)
+}
+
+func setExperimentalMonitor12Source(
+  _ source: String,
+  write: (UInt8, UInt8, Int, UInt16) throws -> Void = writeRoutingValue
+) throws {
+  guard source == "daw12" else {
+    throw ProbeError.coreAudio(kIOReturnBadArgument, "Monitor 1/2 source must be daw12")
+  }
+  try setOutputPair(firstChannel: 0, sources: [0, 1], write: write)
+}
+
+private func setOutputPair(
+  firstChannel: Int,
+  sources: [UInt16],
+  write: (UInt8, UInt8, Int, UInt16) throws -> Void
+) throws {
+  for (index, source) in sources.enumerated() {
+    do {
+      try write(0x33, 0, firstChannel + index, source)
+    } catch {
+      throw ProbeError.routingWriteFailed(index, String(describing: error))
+    }
+  }
+}
+
+func setExperimentalMixer18Source(_ source: String) throws {
+  let value: UInt16
+  switch source {
+  case "daw7": value = 6
+  case "daw8": value = 7
+  default:
+    throw ProbeError.coreAudio(kIOReturnBadArgument, "Mixer channel 18 source must be daw7 or daw8")
+  }
+  try writeRoutingValue(entity: 0x32, selector: 0x06, channel: 17, value: value)
+}
+
+func setExperimentalMixer18Gain(_ gain: String) throws {
+  let value: UInt16
+  switch gain {
+  case "off": value = 0x8000
+  case "minus12": value = 0xf400
+  default:
+    throw ProbeError.coreAudio(kIOReturnBadArgument, "Mixer channel 18 gain must be off or minus12")
+  }
+  try writeRoutingValue(entity: 0x3c, selector: 0x01, channel: 136, value: value)
+}
+
 func readMonitorMixChannelGain(mix: Int, channel: Int) throws -> (raw: UInt16, db: Int) {
   guard (1...8).contains(mix), (1...18).contains(channel) else {
     throw ProbeError.coreAudio(
